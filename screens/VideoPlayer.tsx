@@ -9,8 +9,8 @@ import * as Animatable from 'react-native-animatable';
 
 const VideoPlayer = () => {
   const hlsUrl1080p = 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8'; // Example URL for 1080p
-  const hlsUrl720p = 'https://bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8'; // Example URL for 720p
-  const hlsUrl480p = 'https://example.com/480p.m3u8'; // Example URL for 480p
+  const hlsUrl720p = 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8'; // Example URL for 720p
+  const hlsUrl480p = 'https://test-streams.mux.dev/x36xhzz/url_6/193039199_mp4_h264_aac_hq_7.m3u8'; // Example URL for 480p
   const playerRef = useRef(null);
 
   const [isMuted, setIsMuted] = useState(false);
@@ -21,6 +21,8 @@ const VideoPlayer = () => {
   const [duration, setDuration] = useState(0);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [isSettingsVisible, setIsSettingsVisible] = useState(false);
+  const [showPlaybackOptions, setShowPlaybackOptions] = useState(false);
+  const [showQualityOptions, setShowQualityOptions] = useState(false);
 
   const [selectedQuality, setSelectedQuality] = useState('1080p'); // Default to 1080p
 
@@ -43,6 +45,7 @@ const VideoPlayer = () => {
 
   const handlePlayPause = () => {
     setIsPaused(!isPaused);
+    showFeedback(isPaused ? 'Play' : 'Paused');
   };
 
   const handleVolumeChange = (value) => {
@@ -53,6 +56,7 @@ const VideoPlayer = () => {
   const handlePlaybackRateChange = (rate) => {
     setPlaybackRate(rate);
     showFeedback(`Speed: ${rate}x`);
+    setShowPlaybackOptions(false); // Hide playback options after selection
   };
 
   const handleProgress = (data) => {
@@ -76,6 +80,7 @@ const VideoPlayer = () => {
   const handleQualityChange = (quality) => {
     setSelectedQuality(quality);
     showFeedback(`Quality: ${quality}`);
+    setShowQualityOptions(false); // Hide quality options after selection
   };
 
   const skipForward = () => {
@@ -98,16 +103,6 @@ const VideoPlayer = () => {
       Orientation.lockToPortrait();
     }
   };
-
-  const renderPlaybackRateOptions = () => (
-    <View style={styles.rateOptions}>
-      {[0.5, 1.0, 1.5, 2.0].map((rate) => (
-        <TouchableOpacity key={rate} onPress={() => handlePlaybackRateChange(rate)} style={styles.rateOption}>
-          <Text style={styles.rateText}>{rate}x</Text>
-        </TouchableOpacity>
-      ))}
-    </View>
-  );
 
   return (
     <SafeAreaView style={styles.container}>
@@ -170,16 +165,32 @@ const VideoPlayer = () => {
       </View>
       <Modal isVisible={isSettingsVisible} onBackdropPress={() => setIsSettingsVisible(false)}>
         <View style={styles.modalContent}>
-          <Text style={styles.modalOption}>Quality</Text>
-          {['1080p', '720p', '480p'].map((quality) => (
-            <TouchableOpacity key={quality} onPress={() => handleQualityChange(quality)} style={styles.modalOption}>
-              <Text style={[styles.qualityText, selectedQuality === quality && styles.selectedQuality]}>
-                {quality}
-              </Text>
-            </TouchableOpacity>
-          ))}
-          <Text style={styles.modalOption}>Speed</Text>
-          {renderPlaybackRateOptions()}
+          <TouchableOpacity style={styles.modalOption} onPress={() => setShowPlaybackOptions(!showPlaybackOptions)}>
+            <Text style={styles.optionText}>Playback Speed</Text>
+            <Ionicons name="chevron-forward-outline" size={20} color="black" />
+          </TouchableOpacity>
+          {showPlaybackOptions && (
+            <View style={styles.subMenu}>
+              {[0.5, 1.0, 1.5, 2.0].map((rate) => (
+                <TouchableOpacity key={rate} onPress={() => handlePlaybackRateChange(rate)} style={styles.subMenuOption}>
+                  <Text style={styles.subMenuText}>{rate}x</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+          <TouchableOpacity style={styles.modalOption} onPress={() => setShowQualityOptions(!showQualityOptions)}>
+            <Text style={styles.optionText}>Quality</Text>
+            <Ionicons name="chevron-forward-outline" size={20} color="black" />
+          </TouchableOpacity>
+          {showQualityOptions && (
+            <View style={styles.subMenu}>
+              {['1080p', '720p', '480p'].map((quality) => (
+                <TouchableOpacity key={quality} onPress={() => handleQualityChange(quality)} style={styles.subMenuOption}>
+                  <Text style={styles.subMenuText}>{quality}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
         </View>
       </Modal>
       <Animated.View style={[styles.feedback, { opacity: feedbackOpacity }]}>
@@ -198,37 +209,26 @@ const styles = StyleSheet.create({
   },
   video: {
     width: '100%',
-    height: '50%', // Adjusted height to keep it standard
+    height: '50%',
   },
   fullScreenVideo: {
     width: '100%',
     height: '100%',
   },
   controls: {
-    position: 'absolute',
-    bottom: 20,
-    width: '100%',
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'center',
     alignItems: 'center',
+    position: 'absolute',
+    bottom: 10,
+    width: '100%',
   },
   sliderContainer: {
     flex: 1,
     marginHorizontal: 10,
   },
   volumeSliderContainer: {
-    flex: 1,
-    marginHorizontal: 10,
-  },
-  rateOptions: {
-    flexDirection: 'row',
-  },
-  rateOption: {
-    marginHorizontal: 5,
-  },
-  rateText: {
-    color: 'white',
-    fontSize: 16,
+    width: 100,
   },
   fullScreenButton: {
     marginHorizontal: 10,
@@ -242,14 +242,24 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   modalOption: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginVertical: 10,
   },
-  qualityText: {
+  subMenu: {
+    marginLeft: 20,
+  },
+  subMenuOption: {
+    marginVertical: 5,
+  },
+  optionText: {
     fontSize: 16,
     color: 'black',
   },
-  selectedQuality: {
-    fontWeight: 'bold',
+  subMenuText: {
+    fontSize: 16,
+    color: 'black',
   },
   feedback: {
     position: 'absolute',
