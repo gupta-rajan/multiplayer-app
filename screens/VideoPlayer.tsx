@@ -5,7 +5,14 @@ import Slider from '@react-native-community/slider';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import Orientation from 'react-native-orientation-locker';
 import Modal from 'react-native-modal';
-import * as Animatable from 'react-native-animatable';
+
+const formatTime = (time) => {
+  const minutes = Math.floor(time / 60);
+  const seconds = Math.floor(time % 60);
+  const formattedMinutes = minutes < 10 ? `0${minutes}` : minutes;
+  const formattedSeconds = seconds < 10 ? `0${seconds}` : seconds;
+  return `${formattedMinutes}:${formattedSeconds}`;
+};
 
 const VideoPlayer = () => {
   const hlsUrl1080p = 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8'; // Example URL for 1080p
@@ -23,6 +30,7 @@ const VideoPlayer = () => {
   const [isSettingsVisible, setIsSettingsVisible] = useState(false);
   const [showPlaybackOptions, setShowPlaybackOptions] = useState(false);
   const [showQualityOptions, setShowQualityOptions] = useState(false);
+  const [showVolumeSlider, setShowVolumeSlider] = useState(false);
 
   const [selectedQuality, setSelectedQuality] = useState('1080p'); // Default to 1080p
 
@@ -45,7 +53,7 @@ const VideoPlayer = () => {
 
   const handlePlayPause = () => {
     setIsPaused(!isPaused);
-    showFeedback(isPaused ? 'Play' : 'Paused');
+    showFeedback(isPaused ? 'Play' : 'Pause');
   };
 
   const handleVolumeChange = (value) => {
@@ -104,12 +112,16 @@ const VideoPlayer = () => {
     }
   };
 
+  const toggleVolumeSlider = () => {
+    setShowVolumeSlider(!showVolumeSlider);
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <Video
         ref={playerRef}
         source={{ uri: selectedQuality === '1080p' ? hlsUrl1080p : selectedQuality === '720p' ? hlsUrl720p : hlsUrl480p }}
-        style={isFullScreen ? styles.fullScreenVideo : styles.video}
+        style={styles.video}
         controls={false} // Custom controls
         resizeMode="contain"
         muted={isMuted}
@@ -121,6 +133,16 @@ const VideoPlayer = () => {
         onLoad={handleLoad}
         onEnd={handleEnd}
       />
+      <Slider
+        style={styles.slider}
+        value={currentTime}
+        minimumValue={0}
+        maximumValue={duration}
+        onSlidingComplete={handleSeek}
+        minimumTrackTintColor="#FF0000"
+        maximumTrackTintColor="#000000"
+        thumbTintColor="#FF0000"
+      />
       <View style={styles.controls}>
         <TouchableOpacity onPress={handlePlayPause}>
           <Ionicons name={isPaused ? 'play-circle-outline' : 'pause-circle-outline'} size={30} color="white" />
@@ -128,25 +150,12 @@ const VideoPlayer = () => {
         <TouchableOpacity onPress={handleMute}>
           <Ionicons name={isMuted ? 'volume-mute-outline' : 'volume-high-outline'} size={30} color="white" />
         </TouchableOpacity>
-        <TouchableOpacity onPress={skipBackward}>
-          <Ionicons name="play-back-outline" size={30} color="white" />
+        <TouchableOpacity onPress={toggleVolumeSlider}>
+          <Ionicons name="volume-medium-outline" size={30} color="white" />
         </TouchableOpacity>
-        <TouchableOpacity onPress={skipForward}>
-          <Ionicons name="play-forward-outline" size={30} color="white" />
-        </TouchableOpacity>
-        <View style={styles.sliderContainer}>
+        {showVolumeSlider && (
           <Slider
-            value={currentTime}
-            minimumValue={0}
-            maximumValue={duration}
-            onSlidingComplete={handleSeek}
-            minimumTrackTintColor="#FFFFFF"
-            maximumTrackTintColor="#000000"
-            thumbTintColor="#FFFFFF"
-          />
-        </View>
-        <View style={styles.volumeSliderContainer}>
-          <Slider
+            style={styles.volumeSlider}
             value={volume}
             minimumValue={0}
             maximumValue={1}
@@ -155,12 +164,17 @@ const VideoPlayer = () => {
             maximumTrackTintColor="#000000"
             thumbTintColor="#FFFFFF"
           />
+        )}
+        <View style={styles.durationContainer}>
+          <View style={styles.durationBackground}>
+            <Text style={styles.durationText}>{formatTime(currentTime)} / {formatTime(duration)}</Text>
+          </View>
         </View>
-        <TouchableOpacity onPress={toggleFullScreen} style={styles.fullScreenButton}>
-          <Ionicons name={isFullScreen ? 'contract-outline' : 'expand-outline'} size={30} color="white" />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => setIsSettingsVisible(true)} style={styles.settingsButton}>
+        <TouchableOpacity onPress={() => setIsSettingsVisible(true)}>
           <Ionicons name="settings-outline" size={30} color="white" />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={toggleFullScreen}>
+          <Ionicons name={isFullScreen ? 'contract-outline' : 'expand-outline'} size={30} color="white" />
         </TouchableOpacity>
       </View>
       <Modal isVisible={isSettingsVisible} onBackdropPress={() => setIsSettingsVisible(false)}>
@@ -193,7 +207,7 @@ const VideoPlayer = () => {
           )}
         </View>
       </Modal>
-      <Animated.View style={[styles.feedback, { opacity: feedbackOpacity }]}>
+      <Animated.View style={[styles.feedbackContainer, { opacity: feedbackOpacity }]}>
         <Text style={styles.feedbackText}>{feedbackMessage}</Text>
       </Animated.View>
     </SafeAreaView>
@@ -208,70 +222,87 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   video: {
+    aspectRatio: 16 / 9,
     width: '100%',
-    height: '50%',
   },
-  fullScreenVideo: {
+  slider: {
     width: '100%',
-    height: '100%',
+    height: 40,
+    position: 'absolute',
+    bottom: 70,
   },
   controls: {
     flexDirection: 'row',
-    justifyContent: 'center',
     alignItems: 'center',
+    justifyContent: 'space-around',
     position: 'absolute',
     bottom: 10,
-    width: '100%',
+    left: 0,
+    right: 0,
   },
-  sliderContainer: {
-    flex: 1,
-    marginHorizontal: 10,
+  durationContainer: {
+    position: 'absolute',
+    right: 10,
+    bottom: 20,
   },
-  volumeSliderContainer: {
-    width: 100,
+  durationBackground: {
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 5,
   },
-  fullScreenButton: {
-    marginHorizontal: 10,
-  },
-  settingsButton: {
-    marginHorizontal: 10,
+  durationText: {
+    color: 'white',
+    fontSize: 16,
   },
   modalContent: {
     backgroundColor: 'white',
-    padding: 20,
-    borderRadius: 10,
+    padding: 22,
+    borderRadius: 4,
+    borderColor: 'rgba(0, 0, 0, 0.1)',
   },
   modalOption: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginVertical: 10,
+    marginBottom: 20,
+  },
+  optionText: {
+    fontSize: 18,
   },
   subMenu: {
     marginLeft: 20,
   },
   subMenuOption: {
-    marginVertical: 5,
-  },
-  optionText: {
-    fontSize: 16,
-    color: 'black',
+    paddingVertical: 10,
   },
   subMenuText: {
     fontSize: 16,
-    color: 'black',
   },
-  feedback: {
+  feedbackContainer: {
     position: 'absolute',
-    top: '40%',
-    alignSelf: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    padding: 10,
-    borderRadius: 5,
+    bottom: 100,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 10,
   },
   feedbackText: {
     color: 'white',
-    fontSize: 18,
+    fontSize: 16,
+  },
+  volumeSlider: {
+    width: 100,
+    position: 'absolute',
+    right: 150,
+    bottom: 30,
+  },
+  durationText: {
+    color: 'white',
+    fontSize: 16,
+    position: 'absolute',
+    right: 10,
+    bottom: 20,
   },
 });
 
