@@ -9,16 +9,16 @@ import Modal from 'react-native-modal';
 const formatTime = (time) => {
   const minutes = Math.floor(time / 60);
   const seconds = Math.floor(time % 60);
-  const formattedMinutes = minutes < 10 ? `0${minutes}` : minutes;
-  const formattedSeconds = seconds < 10 ? `0${seconds}` : seconds;
-  return `${formattedMinutes}:${formattedSeconds}`;
+  return `${minutes < 10 ? `0${minutes}` : minutes}:${seconds < 10 ? `0${seconds}` : seconds}`;
 };
 
 const VideoPlayer = () => {
-  const hlsUrl1080p = 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8'; // Example URL for 1080p
-  const hlsUrl720p = 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8'; // Example URL for 720p
-  const hlsUrl480p = 'https://test-streams.mux.dev/x36xhzz/url_6/193039199_mp4_h264_aac_hq_7.m3u8'; // Example URL for 480p
+  const hlsUrl1080p = 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8';
+  const hlsUrl720p = 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8';
+  const hlsUrl480p = 'https://test-streams.mux.dev/x36xhzz/url_6/193039199_mp4_h264_aac_hq_7.m3u8';
+
   const playerRef = useRef(null);
+  const feedbackOpacity = useRef(new Animated.Value(0)).current;
 
   const [isMuted, setIsMuted] = useState(false);
   const [isPaused, setIsPaused] = useState(true);
@@ -31,11 +31,8 @@ const VideoPlayer = () => {
   const [showPlaybackOptions, setShowPlaybackOptions] = useState(false);
   const [showQualityOptions, setShowQualityOptions] = useState(false);
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
-
-  const [selectedQuality, setSelectedQuality] = useState('1080p'); // Default to 1080p
-
+  const [selectedQuality, setSelectedQuality] = useState('1080p');
   const [feedbackMessage, setFeedbackMessage] = useState('');
-  const feedbackOpacity = useRef(new Animated.Value(0)).current;
 
   const showFeedback = (message) => {
     setFeedbackMessage(message);
@@ -64,7 +61,7 @@ const VideoPlayer = () => {
   const handlePlaybackRateChange = (rate) => {
     setPlaybackRate(rate);
     showFeedback(`Speed: ${rate}x`);
-    setShowPlaybackOptions(false); // Hide playback options after selection
+    setShowPlaybackOptions(false);
   };
 
   const handleProgress = (data) => {
@@ -88,7 +85,7 @@ const VideoPlayer = () => {
   const handleQualityChange = (quality) => {
     setSelectedQuality(quality);
     showFeedback(`Quality: ${quality}`);
-    setShowQualityOptions(false); // Hide quality options after selection
+    setShowQualityOptions(false);
   };
 
   const skipForward = () => {
@@ -122,7 +119,7 @@ const VideoPlayer = () => {
         ref={playerRef}
         source={{ uri: selectedQuality === '1080p' ? hlsUrl1080p : selectedQuality === '720p' ? hlsUrl720p : hlsUrl480p }}
         style={styles.video}
-        controls={false} // Custom controls
+        controls={false}
         resizeMode="contain"
         muted={isMuted}
         paused={isPaused}
@@ -218,91 +215,77 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'black',
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   video: {
-    aspectRatio: 16 / 9,
-    width: '100%',
+    flex: 1,
   },
   slider: {
     width: '100%',
     height: 40,
-    position: 'absolute',
-    bottom: 70,
   },
   controls: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-around',
-    position: 'absolute',
-    bottom: 10,
-    left: 0,
-    right: 0,
+    alignItems: 'center',
+    paddingVertical: 10,
+  },
+  volumeSlider: {
+    width: 100,
+    height: 40,
   },
   durationContainer: {
     position: 'absolute',
     right: 10,
-    bottom: 20,
+    bottom: 50,
+    backgroundColor: 'transparent',
   },
   durationBackground: {
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
     borderRadius: 5,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
   },
   durationText: {
     color: 'white',
-    fontSize: 16,
+    fontSize: 12,
   },
   modalContent: {
     backgroundColor: 'white',
-    padding: 22,
-    borderRadius: 4,
-    borderColor: 'rgba(0, 0, 0, 0.1)',
+    padding: 20,
+    borderRadius: 10,
   },
   modalOption: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    paddingVertical: 10,
   },
   optionText: {
     fontSize: 18,
+    color: 'black',
   },
   subMenu: {
-    marginLeft: 20,
+    paddingLeft: 20,
   },
   subMenuOption: {
     paddingVertical: 10,
   },
   subMenuText: {
     fontSize: 16,
+    color: 'gray',
   },
   feedbackContainer: {
     position: 'absolute',
-    bottom: 100,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
+    top: '50%',
+    left: '50%',
+    transform: [{ translateX: -50 }, { translateY: -50 }],
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
     borderRadius: 10,
+    padding: 10,
   },
   feedbackText: {
     color: 'white',
     fontSize: 16,
-  },
-  volumeSlider: {
-    width: 100,
-    position: 'absolute',
-    right: 150,
-    bottom: 30,
-  },
-  durationText: {
-    color: 'white',
-    fontSize: 16,
-    position: 'absolute',
-    right: 10,
-    bottom: 20,
   },
 });
 
