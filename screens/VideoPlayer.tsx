@@ -37,38 +37,40 @@ const VideoPlayer = () => {
   });
 
   const [subtitles, setSubtitles] = useState('');
-  const [selectedSubtitle, setSelectedSubtitle] = useState('lyrics');
+  const [selectedSubtitle, setSelectedSubtitle] = useState('notations');
   const [showSubtitleOptions, setShowSubtitleOptions] = useState(false);
 
   useEffect(() => {
-    // Fetch video URLs from the API
-    const fetchVideoUrls = async () => {
+    // Fetch video URLs and subtitles from the API
+    const fetchData = async () => {
       try {
         const response = await fetch('https://api.shaale.in/api/v1/cache/contents/rHo64ErZeuih5UUZgZGZ?type=song&itemId=c7b21fc8-df56-479f-be66-b2fe881a593a');
         const data = await response.json();
+
         const streamingUrl = data.data.contents[2].streamingUrl; // Adjust this line according to the actual structure of your response
         setVideoUrls({
           hlsUrl1080p: streamingUrl,
           hlsUrl720p: streamingUrl,
           hlsUrl480p: streamingUrl
         });
+
+        // Fetch subtitles based on the selected type
+        if (selectedSubtitle === 'lyrics') {
+          const englishLyrics = data.data.lyrics.find(lyric => lyric.language === 'English');
+          setSubtitles(englishLyrics ? englishLyrics.value : 'No lyrics available');
+        } else if (selectedSubtitle === 'meaning') {
+          const englishMeaning = data.data.meanings.find(meaning => meaning.language === 'English');
+          setSubtitles(englishMeaning ? englishMeaning.value : 'No meanings available');
+        } else if (selectedSubtitle === 'notation') {
+          const englishNotation = data.data.notations.find(notation => notation.language === 'english');
+          setSubtitles(englishNotation ? englishNotation.value : 'No notations available');
+        }
       } catch (error) {
-        console.error('Error fetching video URLs:', error);
+        console.error('Error fetching data:', error);
       }
     };
 
-    const fetchSubtitles = async (type) => {
-      try {
-        const response = await fetch(`https://api.shaale.in/api/v1/cache/contents/rHo64ErZeuih5UUZgZGZ?type=song&itemId=c7b21fc8-df56-479f-be66-b2fe881a593a`);
-        const data = await response.json();
-        setSubtitles(data.subtitles);
-      } catch (error) {
-        console.error('Error fetching subtitles:', error);
-      }
-    };
-
-    fetchVideoUrls();
-    fetchSubtitles(selectedSubtitle);
+    fetchData();
   }, [selectedSubtitle]);
 
   const showFeedback = (message) => {
