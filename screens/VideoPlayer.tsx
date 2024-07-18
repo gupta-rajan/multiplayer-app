@@ -36,6 +36,10 @@ const VideoPlayer = () => {
     hlsUrl480p: ''
   });
 
+  const [subtitles, setSubtitles] = useState('');
+  const [selectedSubtitle, setSelectedSubtitle] = useState('lyrics');
+  const [showSubtitleOptions, setShowSubtitleOptions] = useState(false);
+
   useEffect(() => {
     // Fetch video URLs from the API
     const fetchVideoUrls = async () => {
@@ -53,8 +57,19 @@ const VideoPlayer = () => {
       }
     };
 
+    const fetchSubtitles = async (type) => {
+      try {
+        const response = await fetch(`https://api.shaale.in/api/v1/cache/contents/rHo64ErZeuih5UUZgZGZ?type=song&itemId=c7b21fc8-df56-479f-be66-b2fe881a593a`);
+        const data = await response.json();
+        setSubtitles(data.subtitles);
+      } catch (error) {
+        console.error('Error fetching subtitles:', error);
+      }
+    };
+
     fetchVideoUrls();
-  }, []);
+    fetchSubtitles(selectedSubtitle);
+  }, [selectedSubtitle]);
 
   const showFeedback = (message) => {
     setFeedbackMessage(message);
@@ -135,6 +150,16 @@ const VideoPlayer = () => {
     setShowVolumeSlider(!showVolumeSlider);
   };
 
+  const toggleSubtitleOptions = () => {
+    setShowSubtitleOptions(!showSubtitleOptions);
+  };
+
+  const handleSubtitleChange = (type) => {
+    setSelectedSubtitle(type);
+    setShowSubtitleOptions(false);
+    showFeedback(`Subtitles: ${type}`);
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <Video
@@ -195,6 +220,9 @@ const VideoPlayer = () => {
             <Text style={styles.durationText}>{formatTime(currentTime)} / {formatTime(duration)}</Text>
           </View>
         </View>
+        <TouchableOpacity onPress={toggleSubtitleOptions}>
+          <Ionicons name="chatbubble-outline" size={30} color="white" />
+        </TouchableOpacity>
         <TouchableOpacity onPress={() => setIsSettingsVisible(true)}>
           <Ionicons name="settings-outline" size={30} color="white" />
         </TouchableOpacity>
@@ -232,9 +260,27 @@ const VideoPlayer = () => {
           )}
         </View>
       </Modal>
+      <Modal isVisible={showSubtitleOptions} onBackdropPress={() => setShowSubtitleOptions(false)}>
+        <View style={styles.modalContent}>
+          <TouchableOpacity style={styles.modalOption} onPress={() => handleSubtitleChange('lyrics')}>
+            <Text style={styles.optionText}>Lyrics</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.modalOption} onPress={() => handleSubtitleChange('meaning')}>
+            <Text style={styles.optionText}>Meaning</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.modalOption} onPress={() => handleSubtitleChange('notation')}>
+            <Text style={styles.optionText}>Notation</Text>
+          </TouchableOpacity>
+        </View>
+      </Modal>
       <Animated.View style={[styles.feedbackContainer, { opacity: feedbackOpacity }]}>
         <Text style={styles.feedbackText}>{feedbackMessage}</Text>
       </Animated.View>
+      {subtitles && (
+        <View style={styles.subtitleContainer}>
+          <Text style={styles.subtitleText}>{subtitles}</Text>
+        </View>
+      )}
     </SafeAreaView>
   );
 };
