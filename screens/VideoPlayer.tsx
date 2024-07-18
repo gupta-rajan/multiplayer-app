@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef ,useEffect} from 'react';
 import { SafeAreaView, View, TouchableOpacity, Text, StyleSheet, Animated } from 'react-native';
 import Video from 'react-native-video';
 import Slider from '@react-native-community/slider';
@@ -6,6 +6,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import Orientation from 'react-native-orientation-locker';
 import Modal from 'react-native-modal';
 import styles from '../styles/videoPlayerStyles';
+import MultiTrackAudioPlayer from '../components/MultiTrackAudioPlayer';
 
 const formatTime = (time) => {
   const minutes = Math.floor(time / 60);
