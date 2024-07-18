@@ -1,4 +1,4 @@
-import React, { useState, useRef ,useEffect} from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { SafeAreaView, View, TouchableOpacity, Text, StyleSheet, Animated } from 'react-native';
 import Video from 'react-native-video';
 import Slider from '@react-native-community/slider';
@@ -6,7 +6,6 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import Orientation from 'react-native-orientation-locker';
 import Modal from 'react-native-modal';
 import styles from '../styles/videoPlayerStyles';
-import MultiTrackAudioPlayer from '../components/MultiTrackAudioPlayer';
 
 const formatTime = (time) => {
   const minutes = Math.floor(time / 60);
@@ -15,10 +14,6 @@ const formatTime = (time) => {
 };
 
 const VideoPlayer = () => {
-  const hlsUrl1080p = 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8';
-  const hlsUrl720p = 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8';
-  const hlsUrl480p = 'https://test-streams.mux.dev/x36xhzz/url_6/193039199_mp4_h264_aac_hq_7.m3u8';
-
   const playerRef = useRef(null);
   const feedbackOpacity = useRef(new Animated.Value(0)).current;
 
@@ -35,6 +30,31 @@ const VideoPlayer = () => {
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
   const [selectedQuality, setSelectedQuality] = useState('1080p');
   const [feedbackMessage, setFeedbackMessage] = useState('');
+  const [videoUrls, setVideoUrls] = useState({
+    hlsUrl1080p: '',
+    hlsUrl720p: '',
+    hlsUrl480p: ''
+  });
+
+  useEffect(() => {
+    // Fetch video URLs from the API
+    const fetchVideoUrls = async () => {
+      try {
+        const response = await fetch('https://api.shaale.in/api/v1/cache/contents/rHo64ErZeuih5UUZgZGZ?type=song&itemId=c7b21fc8-df56-479f-be66-b2fe881a593a');
+        const data = await response.json();
+        const streamingUrl = data.data.contents[2].streamingUrl; // Adjust this line according to the actual structure of your response
+        setVideoUrls({
+          hlsUrl1080p: streamingUrl,
+          hlsUrl720p: streamingUrl,
+          hlsUrl480p: streamingUrl
+        });
+      } catch (error) {
+        console.error('Error fetching video URLs:', error);
+      }
+    };
+
+    fetchVideoUrls();
+  }, []);
 
   const showFeedback = (message) => {
     setFeedbackMessage(message);
@@ -119,7 +139,7 @@ const VideoPlayer = () => {
     <SafeAreaView style={styles.container}>
       <Video
         ref={playerRef}
-        source={{ uri: selectedQuality === '1080p' ? hlsUrl1080p : selectedQuality === '720p' ? hlsUrl720p : hlsUrl480p }}
+        source={{ uri: selectedQuality === '1080p' ? videoUrls.hlsUrl1080p : selectedQuality === '720p' ? videoUrls.hlsUrl720p : videoUrls.hlsUrl480p }}
         style={styles.video}
         controls={false}
         resizeMode="contain"
@@ -145,6 +165,12 @@ const VideoPlayer = () => {
       <View style={styles.controls}>
         <TouchableOpacity onPress={handlePlayPause}>
           <Ionicons name={isPaused ? 'play-circle-outline' : 'pause-circle-outline'} size={30} color="white" />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={skipBackward}>
+          <Ionicons name="play-back-outline" size={30} color="white" />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={skipForward}>
+          <Ionicons name="play-forward-outline" size={30} color="white" />
         </TouchableOpacity>
         <TouchableOpacity onPress={handleMute}>
           <Ionicons name={isMuted ? 'volume-mute-outline' : 'volume-high-outline'} size={30} color="white" />
