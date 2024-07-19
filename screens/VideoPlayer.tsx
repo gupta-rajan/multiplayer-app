@@ -47,7 +47,7 @@ const VideoPlayer = () => {
         const response = await fetch('https://api.shaale.in/api/v1/cache/contents/rHo64ErZeuih5UUZgZGZ?type=song&itemId=c7b21fc8-df56-479f-be66-b2fe881a593a');
         const data = await response.json();
 
-        const streamingUrl = data.data.contents[2].streamingUrl; // Adjust this line according to the actual structure of your response
+        const streamingUrl = data.data.contents.find(content => content.song_id=='rHo64ErZeuih5UUZgZGZ').streamingUrl; // Adjust this line according to the actual structure of your response
         setVideoUrls({
           hlsUrl1080p: streamingUrl,
           hlsUrl720p: streamingUrl,
