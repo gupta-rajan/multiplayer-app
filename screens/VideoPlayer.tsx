@@ -39,15 +39,17 @@ const VideoPlayer = () => {
   const [subtitles, setSubtitles] = useState('');
   const [selectedSubtitle, setSelectedSubtitle] = useState('notations');
   const [showSubtitleOptions, setShowSubtitleOptions] = useState(false);
+  const [subtitlesTracks, setSubtitlesTracks] = useState([]);
+  const [audioTracks, setAudioTracks] = useState([]);
 
   useEffect(() => {
     // Fetch video URLs and subtitles from the API
     const fetchData = async () => {
       try {
-        const response = await fetch('https://api.shaale.in/api/v1/cache/contents/rHo64ErZeuih5UUZgZGZ?type=song&itemId=c7b21fc8-df56-479f-be66-b2fe881a593a');
+        const response = await fetch('https://api.shaale.in/api/v1/content/rHo64ErZeuih5UUZgZGZ?type=song&itemId=c7b21fc8-df56-479f-be66-b2fe881a593a');
         const data = await response.json();
 
-        const streamingUrl = data.data.contents.find(content => content.song_id=='rHo64ErZeuih5UUZgZGZ').streamingUrl; // Adjust this line according to the actual structure of your response
+        const streamingUrl = data.data.contents.find(content => content.song_id === 'rHo64ErZeuih5UUZgZGZ').streamingUrl;
         setVideoUrls({
           hlsUrl1080p: streamingUrl,
           hlsUrl720p: streamingUrl,
@@ -72,6 +74,14 @@ const VideoPlayer = () => {
 
     fetchData();
   }, [selectedSubtitle]);
+
+  useEffect(() => {
+    if (videoUrls.hlsUrl1080p) {
+      console.log('HLS is supported');
+    } else {
+      console.warn('HLS not supported');
+    }
+  }, [videoUrls]);
 
   const showFeedback = (message) => {
     setFeedbackMessage(message);
@@ -125,6 +135,13 @@ const VideoPlayer = () => {
     setSelectedQuality(quality);
     showFeedback(`Quality: ${quality}`);
     setShowQualityOptions(false);
+    const qualityUrl = quality === '1080p' ? videoUrls.hlsUrl1080p : quality === '720p' ? videoUrls.hlsUrl720p : videoUrls.hlsUrl480p;
+    if (qualityUrl) {
+      // Set the new source URL
+      playerRef.current.setSource({ uri: qualityUrl });
+    } else {
+      console.error('Selected quality URL is empty');
+    }
   };
 
   const skipForward = () => {
@@ -160,6 +177,10 @@ const VideoPlayer = () => {
     setSelectedSubtitle(type);
     setShowSubtitleOptions(false);
     showFeedback(`Subtitles: ${type}`);
+    const subtitle = subtitlesTracks.find(track => track.name.toLowerCase() === type.toLowerCase());
+    if (subtitle) {
+      playerRef.current.setTextTrack(subtitle.id);
+    }
   };
 
   return (
@@ -184,26 +205,23 @@ const VideoPlayer = () => {
         value={currentTime}
         minimumValue={0}
         maximumValue={duration}
-        onSlidingComplete={handleSeek}
-        minimumTrackTintColor="#FF0000"
-        maximumTrackTintColor="#000000"
-        thumbTintColor="#FF0000"
+        minimumTrackTintColor="#1EB1FC"
+        maximumTrackTintColor="#1EB1FC"
+        thumbTintColor="#1EB1FC"
+        onValueChange={handleSeek}
       />
       <View style={styles.controls}>
-        <TouchableOpacity onPress={handlePlayPause}>
-          <Ionicons name={isPaused ? 'play-circle-outline' : 'pause-circle-outline'} size={30} color="white" />
-        </TouchableOpacity>
         <TouchableOpacity onPress={skipBackward}>
-          <Ionicons name="play-back-outline" size={30} color="white" />
+          <Ionicons name="play-back" size={24} color="#FFF" />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={handlePlayPause}>
+          <Ionicons name={isPaused ? 'play' : 'pause'} size={24} color="#FFF" />
         </TouchableOpacity>
         <TouchableOpacity onPress={skipForward}>
-          <Ionicons name="play-forward-outline" size={30} color="white" />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={handleMute}>
-          <Ionicons name={isMuted ? 'volume-mute-outline' : 'volume-high-outline'} size={30} color="white" />
+          <Ionicons name="play-forward" size={24} color="#FFF" />
         </TouchableOpacity>
         <TouchableOpacity onPress={toggleVolumeSlider}>
-          <Ionicons name="volume-medium-outline" size={30} color="white" />
+          <Ionicons name="volume-high" size={24} color="#FFF" />
         </TouchableOpacity>
         {showVolumeSlider && (
           <Slider
@@ -211,78 +229,72 @@ const VideoPlayer = () => {
             value={volume}
             minimumValue={0}
             maximumValue={1}
+            step={0.1}
+            minimumTrackTintColor="#1EB1FC"
+            maximumTrackTintColor="#1EB1FC"
+            thumbTintColor="#1EB1FC"
             onValueChange={handleVolumeChange}
-            minimumTrackTintColor="#FFFFFF"
-            maximumTrackTintColor="#000000"
-            thumbTintColor="#FFFFFF"
           />
         )}
-        <View style={styles.durationContainer}>
-          <View style={styles.durationBackground}>
-            <Text style={styles.durationText}>{formatTime(currentTime)} / {formatTime(duration)}</Text>
-          </View>
-        </View>
-        <TouchableOpacity onPress={toggleSubtitleOptions}>
-          <Ionicons name="chatbubble-outline" size={30} color="white" />
+        <TouchableOpacity onPress={() => setShowPlaybackOptions(true)}>
+          <Ionicons name="speedometer" size={24} color="#FFF" />
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => setIsSettingsVisible(true)}>
-          <Ionicons name="settings-outline" size={30} color="white" />
+        <TouchableOpacity onPress={() => setShowQualityOptions(true)}>
+          <Ionicons name="settings" size={24} color="#FFF" />
         </TouchableOpacity>
         <TouchableOpacity onPress={toggleFullScreen}>
-          <Ionicons name={isFullScreen ? 'contract-outline' : 'expand-outline'} size={30} color="white" />
+          <Ionicons name={isFullScreen ? 'contract' : 'expand'} size={24} color="#FFF" />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={toggleSubtitleOptions}>
+          <Ionicons name="subtitles" size={24} color="#FFF" />
         </TouchableOpacity>
       </View>
-      <Modal isVisible={isSettingsVisible} onBackdropPress={() => setIsSettingsVisible(false)}>
+      <Text style={styles.subtitle}>{subtitles}</Text>
+      <Modal isVisible={showPlaybackOptions} onBackdropPress={() => setShowPlaybackOptions(false)}>
         <View style={styles.modalContent}>
-          <TouchableOpacity style={styles.modalOption} onPress={() => setShowPlaybackOptions(!showPlaybackOptions)}>
-            <Text style={styles.optionText}>Playback Speed</Text>
-            <Ionicons name="chevron-forward-outline" size={20} color="black" />
+          <TouchableOpacity onPress={() => handlePlaybackRateChange(0.5)}>
+            <Text style={styles.modalOption}>0.5x</Text>
           </TouchableOpacity>
-          {showPlaybackOptions && (
-            <View style={styles.subMenu}>
-              {[0.5, 1.0, 1.5, 2.0].map((rate) => (
-                <TouchableOpacity key={rate} onPress={() => handlePlaybackRateChange(rate)} style={styles.subMenuOption}>
-                  <Text style={styles.subMenuText}>{rate}x</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
-          <TouchableOpacity style={styles.modalOption} onPress={() => setShowQualityOptions(!showQualityOptions)}>
-            <Text style={styles.optionText}>Quality</Text>
-            <Ionicons name="chevron-forward-outline" size={20} color="black" />
+          <TouchableOpacity onPress={() => handlePlaybackRateChange(1.0)}>
+            <Text style={styles.modalOption}>1.0x</Text>
           </TouchableOpacity>
-          {showQualityOptions && (
-            <View style={styles.subMenu}>
-              {['1080p', '720p', '480p'].map((quality) => (
-                <TouchableOpacity key={quality} onPress={() => handleQualityChange(quality)} style={styles.subMenuOption}>
-                  <Text style={styles.subMenuText}>{quality}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
+          <TouchableOpacity onPress={() => handlePlaybackRateChange(1.5)}>
+            <Text style={styles.modalOption}>1.5x</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => handlePlaybackRateChange(2.0)}>
+            <Text style={styles.modalOption}>2.0x</Text>
+          </TouchableOpacity>
+        </View>
+      </Modal>
+      <Modal isVisible={showQualityOptions} onBackdropPress={() => setShowQualityOptions(false)}>
+        <View style={styles.modalContent}>
+          <TouchableOpacity onPress={() => handleQualityChange('1080p')}>
+            <Text style={styles.modalOption}>1080p</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => handleQualityChange('720p')}>
+            <Text style={styles.modalOption}>720p</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => handleQualityChange('480p')}>
+            <Text style={styles.modalOption}>480p</Text>
+          </TouchableOpacity>
         </View>
       </Modal>
       <Modal isVisible={showSubtitleOptions} onBackdropPress={() => setShowSubtitleOptions(false)}>
         <View style={styles.modalContent}>
-          <TouchableOpacity style={styles.modalOption} onPress={() => handleSubtitleChange('lyrics')}>
-            <Text style={styles.optionText}>Lyrics</Text>
+          <TouchableOpacity onPress={() => handleSubtitleChange('Lyrics')}>
+            <Text style={styles.modalOption}>Lyrics</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.modalOption} onPress={() => handleSubtitleChange('meaning')}>
-            <Text style={styles.optionText}>Meaning</Text>
+          <TouchableOpacity onPress={() => handleSubtitleChange('Meaning')}>
+            <Text style={styles.modalOption}>Meaning</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.modalOption} onPress={() => handleSubtitleChange('notation')}>
-            <Text style={styles.optionText}>Notation</Text>
+          <TouchableOpacity onPress={() => handleSubtitleChange('Notation')}>
+            <Text style={styles.modalOption}>Notation</Text>
           </TouchableOpacity>
         </View>
       </Modal>
-      <Animated.View style={[styles.feedbackContainer, { opacity: feedbackOpacity }]}>
+      <Animated.View style={[styles.feedback, { opacity: feedbackOpacity }]}>
         <Text style={styles.feedbackText}>{feedbackMessage}</Text>
       </Animated.View>
-      {subtitles && (
-        <View style={styles.subtitleContainer}>
-          <Text style={styles.subtitleText}>{subtitles}</Text>
-        </View>
-      )}
     </SafeAreaView>
   );
 };
