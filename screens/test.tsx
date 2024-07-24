@@ -7,12 +7,12 @@ import Orientation from 'react-native-orientation-locker';
 import Modal from 'react-native-modal';
 import NetInfo from '@react-native-community/netinfo';
 import { Parser } from 'm3u8-parser';
-import styles from '../styles/videoPlayerStyles'; // Adjust the path as needed
+import styles from '../styles/videoPlayerStyles';
 
 const formatTime = (time) => {
   const minutes = Math.floor(time / 60);
   const seconds = Math.floor(time % 60);
-  return `${minutes < 10 ? `0${minutes}` : minutes}:${seconds < 10 ? `0${seconds}` : seconds}`;
+  return ${minutes < 10 ? 0${minutes} : minutes}:${seconds < 10 ? 0${seconds} : seconds};
 };
 
 const VideoPlayer = () => {
@@ -54,18 +54,22 @@ const VideoPlayer = () => {
 
         const responseM3U8 = await fetch(streamingUrl);
         const m3u8Text = await responseM3U8.text();
+        console.log(m3u8Text);
         const parser = new Parser();
         parser.push(m3u8Text);
         parser.end();
 
         const manifest = parser.manifest;
+        console.log(manifest);
         const playlists = manifest.playlists;
 
         const qualityUrls = {
           '1080p': streamingUrl,
-          '720p': playlists.find(p => p.attributes.RESOLUTION.height === 720)?.uri,
+          '720p': streamingUrl,
           '480p': playlists.find(p => p.attributes.RESOLUTION.height === 480)?.uri
         };
+
+        console.log(qualityUrls);
 
         const subtitlesTracks = manifest.mediaGroups.SUBTITLES.subs;
         setSubtitleTracks(subtitlesTracks);
@@ -120,12 +124,12 @@ const VideoPlayer = () => {
 
   const handleVolumeChange = (value) => {
     setVolume(value);
-    showFeedback(`Volume: ${Math.round(value * 100)}%`);
+    showFeedback(Volume: ${Math.round(value * 100)}%);
   };
 
   const handlePlaybackRateChange = (rate) => {
     setPlaybackRate(rate);
-    showFeedback(`Speed: ${rate}x`);
+    showFeedback(Speed: ${rate}x);
     setShowPlaybackOptions(false);
   };
 
@@ -144,12 +148,12 @@ const VideoPlayer = () => {
 
   const handleSeek = (value) => {
     playerRef.current.seek(value);
-    showFeedback(`Seeked to ${formatTime(value)}`);
+    showFeedback(Seeked to ${Math.floor(value / 60)}:${Math.floor(value % 60).toString().padStart(2, '0')});
   };
 
   const handleQualityChange = (quality) => {
     setSelectedQuality(quality);
-    showFeedback(`Quality: ${quality}`);
+    showFeedback(Quality: ${quality});
     setShowQualityOptions(false);
     setVideoUrl(videoUrls[quality]);
   };
@@ -186,7 +190,7 @@ const VideoPlayer = () => {
   const handleSubtitleChange = async (type) => {
     setSelectedSubtitle(type);
     setShowSubtitleOptions(false);
-    showFeedback(`Subtitles: ${type}`);
+    showFeedback(Subtitles: ${type});
     const selectedTrack = subtitleTracks[type];
     if (selectedTrack) {
       const subtitleResponse = await fetch(selectedTrack.uri);

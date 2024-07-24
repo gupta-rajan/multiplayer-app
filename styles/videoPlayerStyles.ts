@@ -76,6 +76,15 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
   },
+  audioTrackContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  audioVolumeSlider: {
+    flex: 1,
+    marginLeft: 10,
+  },
 });
 
 export default styles;
