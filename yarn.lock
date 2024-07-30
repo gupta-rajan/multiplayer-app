@@ -3182,6 +3182,11 @@ hermes-profile-transformer@^0.0.6:
   dependencies:
     source-map "^0.7.3"
 
+hls-parser@^0.13.3:
+  version "0.13.3"
+  resolved "https://registry.npmjs.org/hls-parser/-/hls-parser-0.13.3.tgz"
+  integrity sha512-DXqW7bwx9j2qFcAXS/LBJTDJWitxknb6oUnsnTvECHrecPvPbhRgIu45OgNDUU6gpwKxMJx40SHRRUUhdIM2gA==
+
 hls.js@^1.5.13:
   version "1.5.13"
   resolved "https://registry.npmjs.org/hls.js/-/hls.js-1.5.13.tgz"

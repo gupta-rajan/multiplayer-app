@@ -54,6 +54,7 @@ const VideoPlayer = () => {
 
         const responseM3U8 = await fetch(streamingUrl);
         const m3u8Text = await responseM3U8.text();
+
         const parser = new Parser();
         parser.push(m3u8Text);
         parser.end();
@@ -61,10 +62,14 @@ const VideoPlayer = () => {
         const manifest = parser.manifest;
         const playlists = manifest.playlists;
 
+        // Extract base URL manually
+        const baseUrl = streamingUrl.split('/').slice(0, -1).join('/');
+        
+        // Resolve relative URLs
         const qualityUrls = {
-          '1080p': streamingUrl,
-          '720p': playlists.find(p => p.attributes.RESOLUTION.height === 720)?.uri,
-          '480p': playlists.find(p => p.attributes.RESOLUTION.height === 480)?.uri
+          '1080p': playlists.find(p => p.attributes.RESOLUTION.height === 1080)?.uri ? `${baseUrl}/${playlists.find(p => p.attributes.RESOLUTION.height === 1080)?.uri}` : '',
+          '720p': playlists.find(p => p.attributes.RESOLUTION.height === 720)?.uri ? `${baseUrl}/${playlists.find(p => p.attributes.RESOLUTION.height === 720)?.uri}` : '',
+          '480p': playlists.find(p => p.attributes.RESOLUTION.height === 480)?.uri ? `${baseUrl}/${playlists.find(p => p.attributes.RESOLUTION.height === 480)?.uri}` : ''
         };
 
         const subtitlesTracks = manifest.mediaGroups.SUBTITLES.subs;
@@ -111,6 +116,7 @@ const VideoPlayer = () => {
   const handleMute = () => {
     setIsMuted(!isMuted);
     showFeedback(isMuted ? 'Unmuted' : 'Muted');
+    if (isMuted) setVolume(0); // Ensure volume is 0 when muted
   };
 
   const handlePlayPause = () => {
@@ -121,6 +127,8 @@ const VideoPlayer = () => {
   const handleVolumeChange = (value) => {
     setVolume(value);
     showFeedback(`Volume: ${Math.round(value * 100)}%`);
+    if (value === 0) setIsMuted(true); // Set muted if volume is 0
+    else setIsMuted(false);
   };
 
   const handlePlaybackRateChange = (rate) => {
@@ -151,7 +159,7 @@ const VideoPlayer = () => {
     setSelectedQuality(quality);
     showFeedback(`Quality: ${quality}`);
     setShowQualityOptions(false);
-    setVideoUrl(videoUrls[quality]);
+    setVideoUrl(videoUrls[quality] || videoUrls['auto']);
   };
 
   const skipForward = () => {
@@ -205,9 +213,9 @@ const VideoPlayer = () => {
         resizeMode="contain"
         muted={isMuted}
         paused={isPaused}
-        volume={volume}
+        volume={isMuted ? 0 : volume} // Set volume based on muted state
         rate={playbackRate}
-        onError={(e) => console.log('Video Error:', e)}
+        onError={(e) => console.log(e)}
         onProgress={handleProgress}
         onLoad={handleLoad}
         onEnd={handleEnd}
@@ -232,7 +240,7 @@ const VideoPlayer = () => {
         <TouchableOpacity onPress={skipForward}>
           <Ionicons name="play-forward" size={24} color="#FFF" />
         </TouchableOpacity>
-        <TouchableOpacity onPress={toggleVolumeSlider}>
+        <TouchableOpacity onPress={handleMute}>
           <Ionicons name={isMuted ? 'volume-mute' : 'volume-high'} size={24} color="#FFF" />
         </TouchableOpacity>
         {showVolumeSlider && (
