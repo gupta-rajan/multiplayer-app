@@ -67,7 +67,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: '50%',
     left: '50%',
-    transform: [{ translateX: -50 }, { translateY: -50 }],
+    transform: [{ translateX: -75 }, { translateY: -25 }],
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
     borderRadius: 10,
     padding: 10,
@@ -80,10 +80,27 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 10,
+    paddingVertical: 5,
+    borderBottomWidth: 1,
+    borderBottomColor: 'gray',
+  },
+  audioControlButton: {
+    padding: 5,
   },
   audioVolumeSlider: {
     flex: 1,
     marginLeft: 10,
+  },
+  optionMenu: {
+    position: 'absolute',
+    bottom: 80,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    padding: 10,
+  },
+  optionButton: {
+    padding: 10,
   },
 });
 

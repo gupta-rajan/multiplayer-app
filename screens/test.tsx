@@ -7,12 +7,12 @@ import Orientation from 'react-native-orientation-locker';
 import Modal from 'react-native-modal';
 import NetInfo from '@react-native-community/netinfo';
 import { Parser } from 'm3u8-parser';
-import styles from '../styles/videoPlayerStyles';
+import styles from '../styles/videoPlayerStyles'; // Adjust the path as needed
 
 const formatTime = (time) => {
   const minutes = Math.floor(time / 60);
   const seconds = Math.floor(time % 60);
-  return ${minutes < 10 ? 0${minutes} : minutes}:${seconds < 10 ? 0${seconds} : seconds};
+  return `${minutes < 10 ? `0${minutes}` : minutes}:${seconds < 10 ? `0${seconds}` : seconds}`;
 };
 
 const VideoPlayer = () => {
@@ -43,6 +43,8 @@ const VideoPlayer = () => {
   const [showSubtitleOptions, setShowSubtitleOptions] = useState(false);
   const [subtitleTracks, setSubtitleTracks] = useState({});
   const [audioTracks, setAudioTracks] = useState([]);
+  const [selectedAudioTrack, setSelectedAudioTrack] = useState(null);
+  const [showAudioOptions, setShowAudioOptions] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -54,28 +56,41 @@ const VideoPlayer = () => {
 
         const responseM3U8 = await fetch(streamingUrl);
         const m3u8Text = await responseM3U8.text();
-        console.log(m3u8Text);
+
         const parser = new Parser();
         parser.push(m3u8Text);
         parser.end();
 
         const manifest = parser.manifest;
-        console.log(manifest);
         const playlists = manifest.playlists;
 
+        const baseUrl = streamingUrl.split('/').slice(0, -1).join('/');
+        
         const qualityUrls = {
-          '1080p': streamingUrl,
-          '720p': streamingUrl,
-          '480p': playlists.find(p => p.attributes.RESOLUTION.height === 480)?.uri
+          '1080p': playlists.find(p => p.attributes.RESOLUTION.height === 1080)?.uri ? `${baseUrl}/${playlists.find(p => p.attributes.RESOLUTION.height === 1080)?.uri}` : '',
+          '720p': playlists.find(p => p.attributes.RESOLUTION.height === 720)?.uri ? `${baseUrl}/${playlists.find(p => p.attributes.RESOLUTION.height === 720)?.uri}` : '',
+          '480p': playlists.find(p => p.attributes.RESOLUTION.height === 480)?.uri ? `${baseUrl}/${playlists.find(p => p.attributes.RESOLUTION.height === 480)?.uri}` : ''
         };
-
-        console.log(qualityUrls);
 
         const subtitlesTracks = manifest.mediaGroups.SUBTITLES.subs;
         setSubtitleTracks(subtitlesTracks);
 
+        // Audio Tracks
+        const audioTracks = manifest.mediaGroups.AUDIO;
+        const keys = Object.keys(audioTracks);
+        const randomIndex = Math.floor(Math.random() * keys.length);
+        const randomKey = keys[randomIndex];
+        // console.log(audioTracks[randomKey]);
+
+        const audioTracksObject = audioTracks[randomKey];
+        const audioTracksArray = Object.keys(audioTracksObject).map(key => ({
+          ...audioTracksObject[key],
+          name: key
+        }));
+        setAudioTracks(audioTracksArray);
+
         setVideoUrls(qualityUrls);
-        setVideoUrl(qualityUrls['auto'] || qualityUrls['480p']); // Default to lowest quality if 'auto' is not available
+        setVideoUrl(qualityUrls['auto'] || qualityUrls['480p']);
       } catch (error) {
         console.error('Error fetching data:', error);
       }
@@ -115,6 +130,7 @@ const VideoPlayer = () => {
   const handleMute = () => {
     setIsMuted(!isMuted);
     showFeedback(isMuted ? 'Unmuted' : 'Muted');
+    if (isMuted) setVolume(0); 
   };
 
   const handlePlayPause = () => {
@@ -124,12 +140,14 @@ const VideoPlayer = () => {
 
   const handleVolumeChange = (value) => {
     setVolume(value);
-    showFeedback(Volume: ${Math.round(value * 100)}%);
+    showFeedback(`Volume: ${Math.round(value * 100)}%`);
+    if (value === 0) setIsMuted(true);
+    else setIsMuted(false);
   };
 
   const handlePlaybackRateChange = (rate) => {
     setPlaybackRate(rate);
-    showFeedback(Speed: ${rate}x);
+    showFeedback(`Speed: ${rate}x`);
     setShowPlaybackOptions(false);
   };
 
@@ -148,14 +166,14 @@ const VideoPlayer = () => {
 
   const handleSeek = (value) => {
     playerRef.current.seek(value);
-    showFeedback(Seeked to ${Math.floor(value / 60)}:${Math.floor(value % 60).toString().padStart(2, '0')});
+    showFeedback(`Seeked to ${formatTime(value)}`);
   };
 
   const handleQualityChange = (quality) => {
     setSelectedQuality(quality);
-    showFeedback(Quality: ${quality});
+    showFeedback(`Quality: ${quality}`);
     setShowQualityOptions(false);
-    setVideoUrl(videoUrls[quality]);
+    setVideoUrl(videoUrls[quality] || videoUrls['auto']);
   };
 
   const skipForward = () => {
@@ -190,13 +208,19 @@ const VideoPlayer = () => {
   const handleSubtitleChange = async (type) => {
     setSelectedSubtitle(type);
     setShowSubtitleOptions(false);
-    showFeedback(Subtitles: ${type});
+    showFeedback(`Subtitles: ${type}`);
     const selectedTrack = subtitleTracks[type];
     if (selectedTrack) {
       const subtitleResponse = await fetch(selectedTrack.uri);
       const subtitleText = await subtitleResponse.text();
-      setSubtitles(subtitleText); // Set the fetched subtitles
+      setSubtitles(subtitleText);
     }
+  };
+
+  const handleAudioTrackChange = (track) => {
+    setSelectedAudioTrack(track.id);
+    showFeedback(`Audio Track: ${track.language || 'Track'}`);
+    setShowAudioOptions(false);
   };
 
   return (
@@ -209,9 +233,9 @@ const VideoPlayer = () => {
         resizeMode="contain"
         muted={isMuted}
         paused={isPaused}
-        volume={volume}
+        volume={isMuted ? 0 : volume}
         rate={playbackRate}
-        onError={(e) => console.log('Video Error:', e)}
+        onError={(e) => console.log(e)}
         onProgress={handleProgress}
         onLoad={handleLoad}
         onEnd={handleEnd}
@@ -236,7 +260,7 @@ const VideoPlayer = () => {
         <TouchableOpacity onPress={skipForward}>
           <Ionicons name="play-forward" size={24} color="#FFF" />
         </TouchableOpacity>
-        <TouchableOpacity onPress={toggleVolumeSlider}>
+        <TouchableOpacity onPress={handleMute}>
           <Ionicons name={isMuted ? 'volume-mute' : 'volume-high'} size={24} color="#FFF" />
         </TouchableOpacity>
         {showVolumeSlider && (
@@ -264,6 +288,11 @@ const VideoPlayer = () => {
         <TouchableOpacity onPress={toggleSubtitleOptions}>
           <Ionicons name="film" size={24} color="#FFF" />
         </TouchableOpacity>
+        {audioTracks.length > 0 && (
+          <TouchableOpacity onPress={() => setShowAudioOptions(true)}>
+            <Ionicons name="musical-notes" size={24} color="#FFF" />
+          </TouchableOpacity>
+        )}
       </View>
       <Text style={styles.subtitle}>{subtitles}</Text>
       <Modal isVisible={showPlaybackOptions} onBackdropPress={() => setShowPlaybackOptions(false)}>
@@ -306,6 +335,15 @@ const VideoPlayer = () => {
           <TouchableOpacity onPress={() => handleSubtitleChange('Notation')}>
             <Text style={styles.modalOption}>Notation</Text>
           </TouchableOpacity>
+        </View>
+      </Modal>
+      <Modal isVisible={showAudioOptions} onBackdropPress={() => setShowAudioOptions(false)}>
+        <View style={styles.modalContent}>
+          {audioTracks.map((track, index) => (
+            <TouchableOpacity key={index} onPress={() => handleAudioTrackChange(track)}>
+              <Text style={styles.modalOption}>{track.language || 'Track ' + (index + 1)}</Text>
+            </TouchableOpacity>
+          ))}
         </View>
       </Modal>
       <Animated.View style={[styles.feedback, { opacity: feedbackOpacity }]}>

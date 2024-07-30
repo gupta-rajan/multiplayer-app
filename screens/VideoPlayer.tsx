@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { SafeAreaView, View, TouchableOpacity, Text, StyleSheet, Animated } from 'react-native';
+import { SafeAreaView, View, TouchableOpacity, Text, StyleSheet, Animated, Alert } from 'react-native';
 import Video from 'react-native-video';
 import Slider from '@react-native-community/slider';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -7,6 +7,7 @@ import Orientation from 'react-native-orientation-locker';
 import Modal from 'react-native-modal';
 import NetInfo from '@react-native-community/netinfo';
 import { Parser } from 'm3u8-parser';
+import Sound from 'react-native-sound';
 import styles from '../styles/videoPlayerStyles'; // Adjust the path as needed
 
 const formatTime = (time) => {
@@ -37,46 +38,63 @@ const VideoPlayer = () => {
     '480p': ''
   });
   const [videoUrl, setVideoUrl] = useState('');
-
   const [subtitles, setSubtitles] = useState('');
   const [selectedSubtitle, setSelectedSubtitle] = useState('notations');
   const [showSubtitleOptions, setShowSubtitleOptions] = useState(false);
   const [subtitleTracks, setSubtitleTracks] = useState({});
   const [audioTracks, setAudioTracks] = useState([]);
+  const [audioElements, setAudioElements] = useState([]);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const response = await fetch('https://api.shaale.in/api/v1/content/rHo64ErZeuih5UUZgZGZ?type=song&itemId=c7b21fc8-df56-479f-be66-b2fe881a593a');
         const data = await response.json();
-
         const streamingUrl = data.data.contents.find(content => content.song_id === 'rHo64ErZeuih5UUZgZGZ').streamingUrl;
-
         const responseM3U8 = await fetch(streamingUrl);
         const m3u8Text = await responseM3U8.text();
-
         const parser = new Parser();
         parser.push(m3u8Text);
         parser.end();
-
         const manifest = parser.manifest;
         const playlists = manifest.playlists;
-
-        // Extract base URL manually
         const baseUrl = streamingUrl.split('/').slice(0, -1).join('/');
-        
-        // Resolve relative URLs
         const qualityUrls = {
           '1080p': playlists.find(p => p.attributes.RESOLUTION.height === 1080)?.uri ? `${baseUrl}/${playlists.find(p => p.attributes.RESOLUTION.height === 1080)?.uri}` : '',
           '720p': playlists.find(p => p.attributes.RESOLUTION.height === 720)?.uri ? `${baseUrl}/${playlists.find(p => p.attributes.RESOLUTION.height === 720)?.uri}` : '',
           '480p': playlists.find(p => p.attributes.RESOLUTION.height === 480)?.uri ? `${baseUrl}/${playlists.find(p => p.attributes.RESOLUTION.height === 480)?.uri}` : ''
         };
-
         const subtitlesTracks = manifest.mediaGroups.SUBTITLES.subs;
         setSubtitleTracks(subtitlesTracks);
+        const audioTracks = manifest.mediaGroups.AUDIO;
+        const keys = Object.keys(audioTracks);
+        const randomIndex = Math.floor(Math.random() * keys.length);
+        const randomKey = keys[randomIndex];
+        const audioTracksObject = audioTracks[randomKey];
+        const audioTracksArray = Object.keys(audioTracksObject).map(key => ({
+          ...audioTracksObject[key],
+          name: key
+        }));
+        setAudioTracks(audioTracksArray);
+
+        // Initialize audio elements
+        const initialAudioElements = audioTracksArray.map(track => {
+          console.log('Audio Track URL:', `${baseUrl}/${track.uri}`);
+          const sound = new Sound(`${baseUrl}/${track.uri}`, null, (error) => {
+            if (error) {
+              console.log('Failed to load the sound', error);
+            }
+          });
+          sound.setVolume(1); // Set default volume
+          return {
+            name: track.name,
+            sound
+          };
+        });
+        setAudioElements(initialAudioElements);
 
         setVideoUrls(qualityUrls);
-        setVideoUrl(qualityUrls['auto'] || qualityUrls['480p']); // Default to lowest quality if 'auto' is not available
+        setVideoUrl(qualityUrls['auto'] || qualityUrls['480p']);
       } catch (error) {
         console.error('Error fetching data:', error);
       }
@@ -104,6 +122,21 @@ const VideoPlayer = () => {
     };
   }, [videoUrls]);
 
+  useEffect(() => {
+    if (audioElements.length) {
+      // Sync audio elements with video playback
+      audioElements.forEach(element => {
+        element.sound.setCurrentTime(currentTime);
+        element.sound.setVolume(volume);
+        if (isMuted) {
+          element.sound.setVolume(0);
+        } else {
+          element.sound.setVolume(volume);
+        }
+      });
+    }
+  }, [currentTime, volume, isMuted, audioElements]);
+
   const showFeedback = (message) => {
     setFeedbackMessage(message);
     Animated.sequence([
@@ -116,7 +149,7 @@ const VideoPlayer = () => {
   const handleMute = () => {
     setIsMuted(!isMuted);
     showFeedback(isMuted ? 'Unmuted' : 'Muted');
-    if (isMuted) setVolume(0); // Ensure volume is 0 when muted
+    if (isMuted) setVolume(0);
   };
 
   const handlePlayPause = () => {
@@ -127,7 +160,7 @@ const VideoPlayer = () => {
   const handleVolumeChange = (value) => {
     setVolume(value);
     showFeedback(`Volume: ${Math.round(value * 100)}%`);
-    if (value === 0) setIsMuted(true); // Set muted if volume is 0
+    if (value === 0) setIsMuted(true);
     else setIsMuted(false);
   };
 
@@ -199,7 +232,7 @@ const VideoPlayer = () => {
     if (selectedTrack) {
       const subtitleResponse = await fetch(selectedTrack.uri);
       const subtitleText = await subtitleResponse.text();
-      setSubtitles(subtitleText); // Set the fetched subtitles
+      setSubtitles(subtitleText);
     }
   };
 
@@ -213,7 +246,7 @@ const VideoPlayer = () => {
         resizeMode="contain"
         muted={isMuted}
         paused={isPaused}
-        volume={isMuted ? 0 : volume} // Set volume based on muted state
+        volume={isMuted ? 0 : volume}
         rate={playbackRate}
         onError={(e) => console.log(e)}
         onProgress={handleProgress}
