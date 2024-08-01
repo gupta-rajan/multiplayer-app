@@ -44,19 +44,28 @@ const VideoPlayer = () => {
   const [subtitleTracks, setSubtitleTracks] = useState({});
   const [audioTracks, setAudioTracks] = useState([]);
   const [audioElements, setAudioElements] = useState([]);
+  const [showMusicTracks, setShowMusicTracks] = useState(false);
+  const [trackVolumes, setTrackVolumes] = useState({});
 
   useEffect(() => {
     const fetchData = async () => {
       try {
+        // Fetch content data
         const response = await fetch('https://api.shaale.in/api/v1/content/rHo64ErZeuih5UUZgZGZ?type=song&itemId=c7b21fc8-df56-479f-be66-b2fe881a593a');
         const data = await response.json();
+        
+        // Extract streaming URL
         const streamingUrl = data.data.contents.find(content => content.song_id === 'rHo64ErZeuih5UUZgZGZ').streamingUrl;
+        
+        // Fetch and parse M3U8 data
         const responseM3U8 = await fetch(streamingUrl);
         const m3u8Text = await responseM3U8.text();
         const parser = new Parser();
         parser.push(m3u8Text);
         parser.end();
         const manifest = parser.manifest;
+        
+        // Build quality URLs
         const playlists = manifest.playlists;
         const baseUrl = streamingUrl.split('/').slice(0, -1).join('/');
         const qualityUrls = {
@@ -64,8 +73,12 @@ const VideoPlayer = () => {
           '720p': playlists.find(p => p.attributes.RESOLUTION.height === 720)?.uri ? `${baseUrl}/${playlists.find(p => p.attributes.RESOLUTION.height === 720)?.uri}` : '',
           '480p': playlists.find(p => p.attributes.RESOLUTION.height === 480)?.uri ? `${baseUrl}/${playlists.find(p => p.attributes.RESOLUTION.height === 480)?.uri}` : ''
         };
+        
+        // Set subtitle tracks
         const subtitlesTracks = manifest.mediaGroups.SUBTITLES.subs;
         setSubtitleTracks(subtitlesTracks);
+        
+        // Filter and set audio tracks
         const audioTracks = manifest.mediaGroups.AUDIO;
         const keys = Object.keys(audioTracks);
         const randomIndex = Math.floor(Math.random() * keys.length);
@@ -75,11 +88,15 @@ const VideoPlayer = () => {
           ...audioTracksObject[key],
           name: key
         }));
-        setAudioTracks(audioTracksArray);
-
-        // Initialize audio elements
-        const initialAudioElements = audioTracksArray.map(track => {
-          console.log('Audio Track URL:', `${baseUrl}/${track.uri}`);
+  
+        // Filter out 'Mix' tracks
+        const filteredAudioTracks = audioTracksArray.filter(track => track.name !== 'Mix');
+        setAudioTracks(filteredAudioTracks);
+  
+        // Initialize audio elements and track volumes
+        const initialTrackVolumes = {};
+        const initialAudioElements = filteredAudioTracks.map(track => {
+          initialTrackVolumes[track.name] = 1;
           const sound = new Sound(`${baseUrl}/${track.uri}`, null, (error) => {
             if (error) {
               console.log('Failed to load the sound', error);
@@ -92,16 +109,18 @@ const VideoPlayer = () => {
           };
         });
         setAudioElements(initialAudioElements);
-
+        setTrackVolumes(initialTrackVolumes);
+        // Set video URLs and default URL
         setVideoUrls(qualityUrls);
         setVideoUrl(qualityUrls['auto'] || qualityUrls['480p']);
       } catch (error) {
         console.error('Error fetching data:', error);
       }
     };
-
+  
     fetchData();
   }, []);
+  
 
   useEffect(() => {
     const handleNetworkChange = (state) => {
@@ -127,15 +146,15 @@ const VideoPlayer = () => {
       // Sync audio elements with video playback
       audioElements.forEach(element => {
         element.sound.setCurrentTime(currentTime);
-        element.sound.setVolume(volume);
+        element.sound.setVolume(trackVolumes[element.name]);
         if (isMuted) {
           element.sound.setVolume(0);
         } else {
-          element.sound.setVolume(volume);
+          element.sound.setVolume(trackVolumes[element.name]);
         }
       });
     }
-  }, [currentTime, volume, isMuted, audioElements]);
+  }, [currentTime, trackVolumes, isMuted, audioElements]);
 
   const showFeedback = (message) => {
     setFeedbackMessage(message);
@@ -236,6 +255,21 @@ const VideoPlayer = () => {
     }
   };
 
+  const handleTrackVolumeChange = (trackName, value) => {
+    setTrackVolumes(prevVolumes => ({ ...prevVolumes, [trackName]: value }));
+    showFeedback(`Track ${trackName} Volume: ${Math.round(value * 100)}%`);
+    const track = audioElements.find(element => element.name === trackName);
+    if (track) track.sound.setVolume(value);
+  };
+
+  const handleMusicIconPress = () => {
+    setShowMusicTracks(!showMusicTracks);
+  };
+
+  const toggleMusicTracks = () => {
+    setShowMusicTracks(!showMusicTracks);
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <Video
@@ -301,6 +335,9 @@ const VideoPlayer = () => {
         <TouchableOpacity onPress={toggleSubtitleOptions}>
           <Ionicons name="film" size={24} color="#FFF" />
         </TouchableOpacity>
+        <TouchableOpacity onPress={handleMusicIconPress}>
+          <Ionicons name="musical-notes-outline" size={24} color="#FFF" />
+        </TouchableOpacity>
       </View>
       <Text style={styles.subtitle}>{subtitles}</Text>
       <Modal isVisible={showPlaybackOptions} onBackdropPress={() => setShowPlaybackOptions(false)}>
@@ -343,6 +380,25 @@ const VideoPlayer = () => {
           <TouchableOpacity onPress={() => handleSubtitleChange('Notation')}>
             <Text style={styles.modalOption}>Notation</Text>
           </TouchableOpacity>
+        </View>
+      </Modal>
+
+      <Modal isVisible={showMusicTracks} onBackdropPress={() => setShowMusicTracks(false)}>
+        <View style={styles.modalContent}>
+          <TouchableOpacity onPress={handleMusicIconPress}>
+            <Ionicons name="close" size={30} color="black" />
+          </TouchableOpacity>
+          <Text style={styles.modalTitle}>Music Tracks</Text>
+          {audioTracks.map(track => (
+            <View key={track.name} style={styles.trackContainer}>
+              <Text style={styles.trackName}>{track.name}</Text>
+              <Slider
+                style={styles.trackSlider}
+                value={trackVolumes[track.name] || 1}
+                onValueChange={(value) => handleTrackVolumeChange(track.name, value)}
+              />
+            </View>
+          ))}
         </View>
       </Modal>
       <Animated.View style={[styles.feedback, { opacity: feedbackOpacity }]}>

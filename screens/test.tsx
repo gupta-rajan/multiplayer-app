@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { SafeAreaView, View, TouchableOpacity, Text, StyleSheet, Animated } from 'react-native';
+import { SafeAreaView, View, TouchableOpacity, Text, StyleSheet, Animated, Alert } from 'react-native';
 import Video from 'react-native-video';
 import Slider from '@react-native-community/slider';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -7,6 +7,7 @@ import Orientation from 'react-native-orientation-locker';
 import Modal from 'react-native-modal';
 import NetInfo from '@react-native-community/netinfo';
 import { Parser } from 'm3u8-parser';
+import Sound from 'react-native-sound';
 import styles from '../styles/videoPlayerStyles'; // Adjust the path as needed
 
 const formatTime = (time) => {
@@ -37,67 +38,89 @@ const VideoPlayer = () => {
     '480p': ''
   });
   const [videoUrl, setVideoUrl] = useState('');
-
   const [subtitles, setSubtitles] = useState('');
   const [selectedSubtitle, setSelectedSubtitle] = useState('notations');
   const [showSubtitleOptions, setShowSubtitleOptions] = useState(false);
   const [subtitleTracks, setSubtitleTracks] = useState({});
   const [audioTracks, setAudioTracks] = useState([]);
-  const [selectedAudioTrack, setSelectedAudioTrack] = useState(null);
-  const [showAudioOptions, setShowAudioOptions] = useState(false);
+  const [audioElements, setAudioElements] = useState([]);
+  const [showMusicTracks, setShowMusicTracks] = useState(false);
+  const [trackVolumes, setTrackVolumes] = useState({});
 
   useEffect(() => {
     const fetchData = async () => {
       try {
+        // Fetch content data
         const response = await fetch('https://api.shaale.in/api/v1/content/rHo64ErZeuih5UUZgZGZ?type=song&itemId=c7b21fc8-df56-479f-be66-b2fe881a593a');
         const data = await response.json();
-
+        
+        // Extract streaming URL
         const streamingUrl = data.data.contents.find(content => content.song_id === 'rHo64ErZeuih5UUZgZGZ').streamingUrl;
-
+        
+        // Fetch and parse M3U8 data
         const responseM3U8 = await fetch(streamingUrl);
         const m3u8Text = await responseM3U8.text();
-
         const parser = new Parser();
         parser.push(m3u8Text);
         parser.end();
-
         const manifest = parser.manifest;
-        const playlists = manifest.playlists;
-
-        const baseUrl = streamingUrl.split('/').slice(0, -1).join('/');
         
+        // Build quality URLs
+        const playlists = manifest.playlists;
+        const baseUrl = streamingUrl.split('/').slice(0, -1).join('/');
         const qualityUrls = {
           '1080p': playlists.find(p => p.attributes.RESOLUTION.height === 1080)?.uri ? `${baseUrl}/${playlists.find(p => p.attributes.RESOLUTION.height === 1080)?.uri}` : '',
           '720p': playlists.find(p => p.attributes.RESOLUTION.height === 720)?.uri ? `${baseUrl}/${playlists.find(p => p.attributes.RESOLUTION.height === 720)?.uri}` : '',
           '480p': playlists.find(p => p.attributes.RESOLUTION.height === 480)?.uri ? `${baseUrl}/${playlists.find(p => p.attributes.RESOLUTION.height === 480)?.uri}` : ''
         };
-
+        
+        // Set subtitle tracks
         const subtitlesTracks = manifest.mediaGroups.SUBTITLES.subs;
         setSubtitleTracks(subtitlesTracks);
-
-        // Audio Tracks
+        
+        // Filter and set audio tracks
         const audioTracks = manifest.mediaGroups.AUDIO;
         const keys = Object.keys(audioTracks);
         const randomIndex = Math.floor(Math.random() * keys.length);
         const randomKey = keys[randomIndex];
-        // console.log(audioTracks[randomKey]);
-
         const audioTracksObject = audioTracks[randomKey];
         const audioTracksArray = Object.keys(audioTracksObject).map(key => ({
           ...audioTracksObject[key],
           name: key
         }));
-        setAudioTracks(audioTracksArray);
-
+  
+        // Filter out 'Mix' tracks
+        const filteredAudioTracks = audioTracksArray.filter(track => track.name !== 'Mix');
+        setAudioTracks(filteredAudioTracks);
+  
+        // Initialize audio elements and track volumes
+        const initialTrackVolumes = {};
+        const initialAudioElements = filteredAudioTracks.map(track => {
+          initialTrackVolumes[track.name] = 1;
+          const sound = new Sound(`${baseUrl}/${track.uri}`, null, (error) => {
+            if (error) {
+              console.log('Failed to load the sound', error);
+            }
+          });
+          sound.setVolume(1); // Set default volume
+          return {
+            name: track.name,
+            sound
+          };
+        });
+        setAudioElements(initialAudioElements);
+        setTrackVolumes(initialTrackVolumes);
+        // Set video URLs and default URL
         setVideoUrls(qualityUrls);
         setVideoUrl(qualityUrls['auto'] || qualityUrls['480p']);
       } catch (error) {
         console.error('Error fetching data:', error);
       }
     };
-
+  
     fetchData();
   }, []);
+  
 
   useEffect(() => {
     const handleNetworkChange = (state) => {
@@ -118,6 +141,21 @@ const VideoPlayer = () => {
     };
   }, [videoUrls]);
 
+  useEffect(() => {
+    if (audioElements.length) {
+      // Sync audio elements with video playback
+      audioElements.forEach(element => {
+        element.sound.setCurrentTime(currentTime);
+        element.sound.setVolume(volume);
+        if (isMuted) {
+          element.sound.setVolume(0);
+        } else {
+          element.sound.setVolume(volume);
+        }
+      });
+    }
+  }, [currentTime, volume, isMuted, audioElements]);
+
   const showFeedback = (message) => {
     setFeedbackMessage(message);
     Animated.sequence([
@@ -130,7 +168,7 @@ const VideoPlayer = () => {
   const handleMute = () => {
     setIsMuted(!isMuted);
     showFeedback(isMuted ? 'Unmuted' : 'Muted');
-    if (isMuted) setVolume(0); 
+    if (isMuted) setVolume(0);
   };
 
   const handlePlayPause = () => {
@@ -217,10 +255,22 @@ const VideoPlayer = () => {
     }
   };
 
-  const handleAudioTrackChange = (track) => {
-    setSelectedAudioTrack(track.id);
-    showFeedback(`Audio Track: ${track.language || 'Track'}`);
-    setShowAudioOptions(false);
+  const handleTrackVolumeChange = (trackName, volume) => {
+    const updatedElements = audioElements.map(element => {
+      if (element.name === trackName) {
+        element.sound.setVolume(volume);
+      }
+      return element;
+    });
+    setAudioElements(updatedElements);
+    setTrackVolumes(prevVolumes => ({
+      ...prevVolumes,
+      [trackName]: volume
+    }));
+  };
+
+  const toggleMusicTracks = () => {
+    setShowMusicTracks(!showMusicTracks);
   };
 
   return (
@@ -288,11 +338,6 @@ const VideoPlayer = () => {
         <TouchableOpacity onPress={toggleSubtitleOptions}>
           <Ionicons name="film" size={24} color="#FFF" />
         </TouchableOpacity>
-        {audioTracks.length > 0 && (
-          <TouchableOpacity onPress={() => setShowAudioOptions(true)}>
-            <Ionicons name="musical-notes" size={24} color="#FFF" />
-          </TouchableOpacity>
-        )}
       </View>
       <Text style={styles.subtitle}>{subtitles}</Text>
       <Modal isVisible={showPlaybackOptions} onBackdropPress={() => setShowPlaybackOptions(false)}>
@@ -335,15 +380,6 @@ const VideoPlayer = () => {
           <TouchableOpacity onPress={() => handleSubtitleChange('Notation')}>
             <Text style={styles.modalOption}>Notation</Text>
           </TouchableOpacity>
-        </View>
-      </Modal>
-      <Modal isVisible={showAudioOptions} onBackdropPress={() => setShowAudioOptions(false)}>
-        <View style={styles.modalContent}>
-          {audioTracks.map((track, index) => (
-            <TouchableOpacity key={index} onPress={() => handleAudioTrackChange(track)}>
-              <Text style={styles.modalOption}>{track.language || 'Track ' + (index + 1)}</Text>
-            </TouchableOpacity>
-          ))}
         </View>
       </Modal>
       <Animated.View style={[styles.feedback, { opacity: feedbackOpacity }]}>
