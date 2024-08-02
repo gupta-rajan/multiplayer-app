@@ -110,6 +110,13 @@ const VideoPlayer = () => {
         });
         setAudioElements(initialAudioElements);
         setTrackVolumes(initialTrackVolumes);
+        audioElements.forEach(({ sound }) => {
+          sound.play((success) => {
+            if (!success) {
+              console.log('Playback failed due to audio decoding errors');
+            }
+          });
+        });
         // Set video URLs and default URL
         setVideoUrls(qualityUrls);
         setVideoUrl(qualityUrls['auto'] || qualityUrls['480p']);

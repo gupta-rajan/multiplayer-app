@@ -55,7 +55,11 @@ const VideoPlayer = () => {
         const data = await response.json();
         
         // Extract streaming URL
-        const streamingUrl = data.data.contents.find(content => content.song_id === 'rHo64ErZeuih5UUZgZGZ').streamingUrl;
+        const songContent = data.data.contents.find(content => content.song_id === 'rHo64ErZeuih5UUZgZGZ');
+        if (!songContent) {
+          throw new Error('Song content not found');
+        }
+        const streamingUrl = songContent.streamingUrl;
         
         // Fetch and parse M3U8 data
         const responseM3U8 = await fetch(streamingUrl);
@@ -75,14 +79,13 @@ const VideoPlayer = () => {
         };
         
         // Set subtitle tracks
-        const subtitlesTracks = manifest.mediaGroups.SUBTITLES.subs;
-        setSubtitleTracks(subtitlesTracks);
+        const subtitleTracks = manifest.mediaGroups.SUBTITLES?.subs || [];
+        setSubtitleTracks(subtitleTracks);
         
         // Filter and set audio tracks
         const audioTracks = manifest.mediaGroups.AUDIO;
-        const keys = Object.keys(audioTracks);
-        const randomIndex = Math.floor(Math.random() * keys.length);
-        const randomKey = keys[randomIndex];
+        const audioTrackKeys = Object.keys(audioTracks);
+        const randomKey = audioTrackKeys[Math.floor(Math.random() * audioTrackKeys.length)];
         const audioTracksObject = audioTracks[randomKey];
         const audioTracksArray = Object.keys(audioTracksObject).map(key => ({
           ...audioTracksObject[key],
@@ -107,12 +110,14 @@ const VideoPlayer = () => {
             name: track.name,
             sound
           };
-        });
+        });        
         setAudioElements(initialAudioElements);
         setTrackVolumes(initialTrackVolumes);
+  
         // Set video URLs and default URL
         setVideoUrls(qualityUrls);
         setVideoUrl(qualityUrls['auto'] || qualityUrls['480p']);
+        
       } catch (error) {
         console.error('Error fetching data:', error);
       }
@@ -120,6 +125,15 @@ const VideoPlayer = () => {
   
     fetchData();
   }, []);
+
+  useEffect(() => {
+    return () => {
+      // Cleanup audio elements
+      audioElements.forEach(({ sound }) => {
+        sound.release();
+      });
+    };
+  }, [audioElements]);
   
 
   useEffect(() => {
@@ -142,19 +156,44 @@ const VideoPlayer = () => {
   }, [videoUrls]);
 
   useEffect(() => {
+    // Handle play/pause synchronization
     if (audioElements.length) {
-      // Sync audio elements with video playback
-      audioElements.forEach(element => {
-        element.sound.setCurrentTime(currentTime);
-        element.sound.setVolume(trackVolumes[element.name]);
-        if (isMuted) {
-          element.sound.setVolume(0);
+      audioElements.forEach(({ sound }) => {
+        if (isPaused) {
+          sound.pause();
         } else {
-          element.sound.setVolume(trackVolumes[element.name]);
+          sound.play((success) => {
+            if (!success) {
+              console.log('Playback failed due to audio decoding errors');
+            }
+          });
         }
       });
     }
-  }, [currentTime, trackVolumes, isMuted, audioElements]);
+  }, [isPaused, audioElements]);
+  
+
+  useEffect(() => {
+    // Handle volume change synchronization
+    if (audioElements.length) {
+      audioElements.forEach(({ sound }) => sound.setVolume(volume));
+    }
+  }, [volume, audioElements]);
+
+  useEffect(() => {
+    // Handle playback rate change synchronization
+    if (audioElements.length) {
+      audioElements.forEach(({ sound }) => sound.setSpeed(playbackRate));
+    }
+  }, [playbackRate, audioElements]);
+
+  useEffect(() => {
+    // Handle current time synchronization
+    if (audioElements.length) {
+      audioElements.forEach(({ sound }) => sound.setCurrentTime(currentTime));
+    }
+  }, [currentTime, audioElements]);
+  
 
   const showFeedback = (message) => {
     setFeedbackMessage(message);
@@ -174,23 +213,58 @@ const VideoPlayer = () => {
   const handlePlayPause = () => {
     setIsPaused(!isPaused);
     showFeedback(isPaused ? 'Play' : 'Pause');
+    if (audioElements.length) {
+      audioElements.forEach(({ sound }) => {
+        if (isPaused) {
+          sound.pause();
+        } else {
+          sound.play((success) => {
+            if (!success) {
+              console.log('Playback failed due to audio decoding errors');
+            }
+          });
+        }
+      });
+    }
   };
 
   const handleVolumeChange = (value) => {
     setVolume(value);
     showFeedback(`Volume: ${Math.round(value * 100)}%`);
-    if (value === 0) setIsMuted(true);
-    else setIsMuted(false);
+    setIsMuted(value === 0);
+    if (audioElements.length) {
+      audioElements.forEach(({ sound }) => sound.setVolume(value));
+    }
   };
 
   const handlePlaybackRateChange = (rate) => {
     setPlaybackRate(rate);
     showFeedback(`Speed: ${rate}x`);
     setShowPlaybackOptions(false);
+    if (audioElements.length) {
+      audioElements.forEach(({ sound }) => sound.setSpeed(rate));
+    }
   };
 
   const handleProgress = (data) => {
-    setCurrentTime(data.currentTime);
+    // setCurrentTime(data.currentTime);
+    // setDuration(data.playableDuration);
+    
+    // Sync audio with video if needed
+    if (audioElements.length) {
+      audioElements.forEach(({ sound }) => {
+        const syncThreshold = 0.1;
+        sound.getCurrentTime((audioCurrentTime) => {
+          console.log(audioCurrentTime);
+          console.log(data.currentTime);
+          const timeDifference = Math.abs(audioCurrentTime - data.currentTime);
+
+          if (timeDifference > syncThreshold) {
+            sound.setCurrentTime(data.currentTime);
+          }
+        });
+      });
+    }
   };
 
   const handleLoad = (data) => {
@@ -204,8 +278,13 @@ const VideoPlayer = () => {
 
   const handleSeek = (value) => {
     playerRef.current.seek(value);
+    setCurrentTime(value);
+    if (audioElements.length) {
+      audioElements.forEach(({ sound }) => sound.setCurrentTime(value));
+    }
     showFeedback(`Seeked to ${formatTime(value)}`);
   };
+  
 
   const handleQualityChange = (quality) => {
     setSelectedQuality(quality);
