@@ -187,12 +187,23 @@ const VideoPlayer = () => {
     }
   }, [playbackRate, audioElements]);
 
-  useEffect(() => {
-    // Handle current time synchronization
-    if (audioElements.length) {
-      audioElements.forEach(({ sound }) => sound.setCurrentTime(currentTime));
-    }
-  }, [currentTime, audioElements]);
+  // useEffect(() => {
+  //   // Handle current time synchronization
+  //   const syncThreshold = 0.2;
+  //   if (audioElements.length) {
+  //     audioElements.forEach(({ sound }) => {
+  //       const syncThreshold = 0.2;
+  //       console.log(currentTime);
+  //       sound.getCurrentTime((audioCurrentTime) => {
+  //         const timeDifference = Math.abs(audioCurrentTime - currentTime);
+
+  //         if (timeDifference > syncThreshold) {
+  //           sound.setCurrentTime(data.currentTime);
+  //         }
+  //       });
+  //     });
+  //   }
+  // }, [currentTime, audioElements]);
   
 
   const showFeedback = (message) => {
@@ -247,24 +258,24 @@ const VideoPlayer = () => {
   };
 
   const handleProgress = (data) => {
-    // setCurrentTime(data.currentTime);
+    setCurrentTime(data.currentTime);
     // setDuration(data.playableDuration);
     
     // Sync audio with video if needed
-    if (audioElements.length) {
-      audioElements.forEach(({ sound }) => {
-        const syncThreshold = 0.1;
-        sound.getCurrentTime((audioCurrentTime) => {
-          console.log(audioCurrentTime);
-          console.log(data.currentTime);
-          const timeDifference = Math.abs(audioCurrentTime - data.currentTime);
+    // if (audioElements.length) {
+    //   audioElements.forEach(({ sound }) => {
+    //     const syncThreshold = 0.2;
+    //     sound.getCurrentTime((audioCurrentTime) => {
+    //       console.log(audioCurrentTime);
+    //       console.log(data.currentTime);
+    //       const timeDifference = Math.abs(audioCurrentTime - data.currentTime);
 
-          if (timeDifference > syncThreshold) {
-            sound.setCurrentTime(data.currentTime);
-          }
-        });
-      });
-    }
+    //       if (timeDifference > syncThreshold) {
+    //         sound.setCurrentTime(data.currentTime);
+    //       }
+    //     });
+    //   });
+    // }
   };
 
   const handleLoad = (data) => {
@@ -296,14 +307,22 @@ const VideoPlayer = () => {
   const skipForward = () => {
     const newTime = Math.min(currentTime + 10, duration);
     playerRef.current.seek(newTime);
+    setCurrentTime(newTime);
+    if (audioElements.length) {
+      audioElements.forEach(({ sound }) => sound.setCurrentTime(newTime));
+    }
     showFeedback('>> 10 seconds');
   };
-
+  
   const skipBackward = () => {
     const newTime = Math.max(currentTime - 10, 0);
     playerRef.current.seek(newTime);
+    setCurrentTime(newTime);
+    if (audioElements.length) {
+      audioElements.forEach(({ sound }) => sound.setCurrentTime(newTime));
+    }
     showFeedback('<< 10 seconds');
-  };
+  };  
 
   const toggleFullScreen = () => {
     setIsFullScreen(!isFullScreen);
