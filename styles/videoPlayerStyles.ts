@@ -17,10 +17,17 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
     alignItems: 'center',
     paddingVertical: 10,
+    paddingHorizontal: 10,
+    marginHorizontal: 5,
   },
   volumeSlider: {
     width: 100,
     height: 40,
+  },
+  
+  volumeControl: {
+    flexDirection: 'column',
+    alignItems: 'center',
   },
   durationContainer: {
     position: 'absolute',

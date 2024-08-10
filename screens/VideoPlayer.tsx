@@ -47,6 +47,8 @@ const VideoPlayer = () => {
   const [showMusicTracks, setShowMusicTracks] = useState(false);
   const [trackVolumes, setTrackVolumes] = useState({});
 
+  const currentTimeRef = useRef<number>(0);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -105,12 +107,14 @@ const VideoPlayer = () => {
               console.log('Failed to load the sound', error);
             }
           });
+          // console.log(playerRef.current.getCurrentPosition);
+          sound.setCurrentTime(currentTime);
           sound.setVolume(1); // Set default volume
           return {
             name: track.name,
             sound
           };
-        });        
+        });  
         setAudioElements(initialAudioElements);
         setTrackVolumes(initialTrackVolumes);
   
@@ -160,8 +164,10 @@ const VideoPlayer = () => {
     if (audioElements.length) {
       audioElements.forEach(({ sound }) => {
         if (isPaused) {
+          sound.setCurrentTime(currentTime);
           sound.pause();
         } else {
+          sound.setCurrentTime(currentTime);
           sound.play((success) => {
             if (!success) {
               console.log('Playback failed due to audio decoding errors');
@@ -187,24 +193,21 @@ const VideoPlayer = () => {
     }
   }, [playbackRate, audioElements]);
 
-  // useEffect(() => {
-  //   // Handle current time synchronization
-  //   const syncThreshold = 0.2;
-  //   if (audioElements.length) {
-  //     audioElements.forEach(({ sound }) => {
-  //       const syncThreshold = 0.2;
-  //       console.log(currentTime);
-  //       sound.getCurrentTime((audioCurrentTime) => {
-  //         const timeDifference = Math.abs(audioCurrentTime - currentTime);
-
-  //         if (timeDifference > syncThreshold) {
-  //           sound.setCurrentTime(data.currentTime);
-  //         }
-  //       });
-  //     });
-  //   }
-  // }, [currentTime, audioElements]);
-  
+  useEffect(() => {
+    if (audioElements.length) {
+      audioElements.forEach(({ sound }) => {
+        const syncThreshold = 1;
+        sound.getCurrentTime((audioCurrentTime) => {
+          const timeDifference = Math.abs(audioCurrentTime - currentTime);
+          console.log("time diff: "+timeDifference);
+          if (timeDifference > syncThreshold) {
+            console.log("curr time: "+currentTime);
+            sound.setCurrentTime(currentTime);
+          }
+        });
+      });
+    }
+  }, [currentTime, audioElements]);
 
   const showFeedback = (message) => {
     setFeedbackMessage(message);
@@ -242,7 +245,7 @@ const VideoPlayer = () => {
   const handleVolumeChange = (value) => {
     setVolume(value);
     showFeedback(`Volume: ${Math.round(value * 100)}%`);
-    setIsMuted(value === 0);
+    // setIsMuted(value === 0);
     if (audioElements.length) {
       audioElements.forEach(({ sound }) => sound.setVolume(value));
     }
@@ -258,6 +261,8 @@ const VideoPlayer = () => {
   };
 
   const handleProgress = (data) => {
+    currentTimeRef.current = data.currentTime;
+
     setCurrentTime(data.currentTime);
     // setDuration(data.playableDuration);
     
@@ -280,6 +285,7 @@ const VideoPlayer = () => {
 
   const handleLoad = (data) => {
     setDuration(data.duration);
+    setCurrentTime(data.currentTime);
   };
 
   const handleEnd = () => {
@@ -384,6 +390,13 @@ const VideoPlayer = () => {
         onProgress={handleProgress}
         onLoad={handleLoad}
         onEnd={handleEnd}
+        onBuffer={() => {
+          showFeedback('Buffering...');
+        }}
+        onError={(error) => {
+          showFeedback('Error loading video');
+          console.error(error);
+        }}
       />
       <Slider
         style={styles.slider}
@@ -405,8 +418,8 @@ const VideoPlayer = () => {
         <TouchableOpacity onPress={skipForward}>
           <Ionicons name="play-forward" size={24} color="#FFF" />
         </TouchableOpacity>
-        <TouchableOpacity onPress={handleMute}>
-          <Ionicons name={isMuted ? 'volume-mute' : 'volume-high'} size={24} color="#FFF" />
+        <TouchableOpacity onPress={toggleVolumeSlider}>
+          <Ionicons name="volume-medium" size={24} color="#FFF" />
         </TouchableOpacity>
         {showVolumeSlider && (
           <Slider
