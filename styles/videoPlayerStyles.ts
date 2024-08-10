@@ -21,13 +21,31 @@ const styles = StyleSheet.create({
     marginHorizontal: 5,
   },
   volumeSlider: {
-    width: 100,
-    height: 40,
+    width: 90,  // Width of the slider itself, same as container width
+    height: '100%', // Full height of the container
+    transform: [{ rotate: '-90deg' }], // Rotate to make it vertical
+    transformOrigin: 'center',
   },
-  
+  volumeIconContainer: {
+    position: 'relative', // Make sure the icon container has relative positioning
+  },
   volumeControl: {
     flexDirection: 'column',
     alignItems: 'center',
+    position: 'relative', // Allow positioning of child components
+  },
+  volumeContainer: {
+    position: 'absolute',
+    bottom: 70, // Adjust this to position the slider container above the volume icon
+    right: 220,  // Align it to the right side of the screen (same as volume icon)
+    width: 30,  // Width of the vertical slider container
+    height: 100, // Increase this to adjust the height of the container
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#808080', // Background color around the slider
+    borderRadius: 10, // Optional: rounded corners
+    padding: 10, // Optional: padding around the slider
+    zIndex: 10, // Ensure it's above other components
   },
   durationContainer: {
     position: 'absolute',
