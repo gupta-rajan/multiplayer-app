@@ -208,10 +208,12 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
     borderRadius: 10,
     padding: 10,
+    textAlign: 'center',
   },
   feedbackText: {
     color: 'white',
     fontSize: 16,
+    textAlign: 'center',
   },
   audioTrackContainer: {
     flexDirection: 'row',

@@ -321,12 +321,19 @@ const VideoPlayer = () => {
   };
 
   //Playback rate change handler
-  const handlePlaybackRateChange = rate => {
-    setPlaybackRate(rate);
-    showFeedback(`Speed: ${rate}x`);
-    setShowPlaybackOptions(false);
-    if (audioElements.length) {
-      audioElements.forEach(({sound}) => sound.setSpeed(rate));
+  // Playback rate change handler
+  const handlePlaybackRateChange = (rate) => {
+    // Only change the playback rate if the video is not paused
+    if (!isPaused) {
+      setPlaybackRate(rate);
+      showFeedback(`Speed: ${rate}x`);
+      setShowPlaybackOptions(false);
+      
+      if (audioElements.length) {
+        audioElements.forEach(({ sound }) => sound.setSpeed(rate));
+      }
+    } else {
+      showFeedback('Cannot change speed while paused');
     }
   };
 
@@ -672,7 +679,6 @@ const VideoPlayer = () => {
             </Animated.View>
           )}
         </View>
-
         <TouchableOpacity onPress={() => setShowQualityOptions(true)}>
           <Ionicons name="settings" size={24} color="#FFF" />
         </TouchableOpacity>
