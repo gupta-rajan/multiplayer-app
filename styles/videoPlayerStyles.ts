@@ -46,7 +46,7 @@ const styles = StyleSheet.create({
     height: 100, // Height of the vertical slider container
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '1A2130', // Background color around the slider
+    backgroundColor: '#1A2130', // Background color around the slider
     borderRadius: 10, // Optional: rounded corners
     padding: 10, // Optional: padding around the slider
     zIndex: 1, // Ensure it's below the volume icon
@@ -106,6 +106,35 @@ const styles = StyleSheet.create({
     transform: [{ rotate: '-90deg' }], // Rotate the slider to make it vertical
     width: 100, // Adjust width as needed
     height: 100, // Adjust height as needed
+  },
+
+  //Playback options
+  playbackControlContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    position: 'relative', // Ensure positioning context for children
+  },
+  playbackIconContainer: {
+    zIndex: 2, // Ensure the playback icon is above the playback options
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  playbackOptionsContainer: {
+    position: 'absolute',
+    bottom: 40, // Adjust this to position the options container above the playback icon
+    right: 0, // Align the options with the center of the playback icon
+    backgroundColor: '#1A2130', // Background color around the options
+    borderRadius: 10, // Optional: rounded corners
+    padding: 10, // Optional: padding around the options
+    zIndex: 1, // Ensure it's below the playback icon
+    width: 50,
+  },
+  playbackOption: {
+    paddingVertical: 10, // Vertical padding for each option
+    color: '#FFF', // Text color for the options
+    fontSize: 12, // Font size for the options
+    textAlign: 'center', // Center text within each option
   },
 
   settingsIconContainer: {

@@ -11,6 +11,9 @@ import {
 import Video from 'react-native-video';
 import Slider from '@react-native-community/slider';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+
 import Orientation from 'react-native-orientation-locker';
 import Modal from 'react-native-modal';
 import NetInfo from '@react-native-community/netinfo';
@@ -32,11 +35,9 @@ const VideoPlayer = () => {
 
   const [isMuted, setIsMuted] = useState(false);
   const [isPaused, setIsPaused] = useState(true);
-  const [playbackRate, setPlaybackRate] = useState(1.0);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isFullScreen, setIsFullScreen] = useState(false);
-  const [showPlaybackOptions, setShowPlaybackOptions] = useState(false);
   const [showQualityOptions, setShowQualityOptions] = useState(false);
 
   //Volume
@@ -49,11 +50,17 @@ const VideoPlayer = () => {
   const [showMusicTracks, setShowMusicTracks] = useState(false);
   const [trackVolumes, setTrackVolumes] = useState({});
   const trackAnimation = useRef(new Animated.Value(0)).current; // For scaling effect
-
   const trackScale = trackAnimation.interpolate({
     inputRange: [0, 1],
     outputRange: [0, 1],
   });
+
+  //Playback speeds
+  const [playbackRate, setPlaybackRate] = useState(1.0);
+  const [showPlaybackOptions, setShowPlaybackOptions] = useState(false);
+  // const playbackAnimation = useRef(new Animated.Value(0)).current;
+  const playbackScale = useRef(new Animated.Value(0)).current;
+  const playbackOpacity = useRef(new Animated.Value(0)).current;
 
   const [selectedQuality, setSelectedQuality] = useState('auto');
   const [feedbackMessage, setFeedbackMessage] = useState('');
@@ -313,6 +320,7 @@ const VideoPlayer = () => {
     }
   };
 
+  //Playback rate change handler
   const handlePlaybackRateChange = rate => {
     setPlaybackRate(rate);
     showFeedback(`Speed: ${rate}x`);
@@ -400,6 +408,8 @@ const VideoPlayer = () => {
     }
   };
 
+
+  //Volume Slider toggle
   const toggleVolumeSlider = () => {
     if (showVolumeSlider) {
       // Close the slider
@@ -425,6 +435,38 @@ const VideoPlayer = () => {
           useNativeDriver: true,
         }),
         Animated.timing(volumeOpacity, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  };
+
+  //Playback speed toggle handler
+  const togglePlaybackOptions = () => {
+    if (showPlaybackOptions) {
+      Animated.parallel([
+        Animated.timing(playbackScale, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(playbackOpacity, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start(() => setShowPlaybackOptions(false));
+    } else {
+      setShowPlaybackOptions(true);
+      Animated.parallel([
+        Animated.timing(playbackScale, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(playbackOpacity, {
           toValue: 1,
           duration: 300,
           useNativeDriver: true,
@@ -564,7 +606,7 @@ const VideoPlayer = () => {
           <TouchableOpacity
             onPress={toggleMusicTracks}
             style={styles.musicIconContainer}>
-            <Ionicons name="musical-notes" size={24} color="#FFF" />
+            <MaterialIcons name="multitrack-audio" size={24} color="#FFF" />
           </TouchableOpacity>
           {showMusicTracks && (
             <Animated.View
@@ -600,9 +642,37 @@ const VideoPlayer = () => {
           )}
         </View>
 
-        <TouchableOpacity onPress={() => setShowPlaybackOptions(true)}>
-          <Ionicons name="speedometer" size={24} color="#FFF" />
-        </TouchableOpacity>
+        <View style={styles.playbackControlContainer}>
+          <TouchableOpacity
+            onPress={togglePlaybackOptions}
+            style={styles.playbackIconContainer}>
+            <MaterialCommunityIcons name="play-speed" size={24} color="#FFF" />
+          </TouchableOpacity>
+          {showPlaybackOptions && (
+            <Animated.View
+              style={[
+                styles.playbackOptionsContainer,
+                {
+                  transform: [{ scaleY: playbackScale }],
+                  opacity: playbackOpacity,
+                },
+              ]}>
+              <TouchableOpacity onPress={() => handlePlaybackRateChange(0.5)}>
+                <Text style={styles.playbackOption}>0.5x</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => handlePlaybackRateChange(1.0)}>
+                <Text style={styles.playbackOption}>1.0x</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => handlePlaybackRateChange(1.5)}>
+                <Text style={styles.playbackOption}>1.5x</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => handlePlaybackRateChange(2.0)}>
+                <Text style={styles.playbackOption}>2.0x</Text>
+              </TouchableOpacity>
+            </Animated.View>
+          )}
+        </View>
+
         <TouchableOpacity onPress={() => setShowQualityOptions(true)}>
           <Ionicons name="settings" size={24} color="#FFF" />
         </TouchableOpacity>
@@ -618,24 +688,6 @@ const VideoPlayer = () => {
         </TouchableOpacity>
       </View>
       <Text style={styles.subtitle}>{subtitles}</Text>
-      <Modal
-        isVisible={showPlaybackOptions}
-        onBackdropPress={() => setShowPlaybackOptions(false)}>
-        <View style={styles.modalContent}>
-          <TouchableOpacity onPress={() => handlePlaybackRateChange(0.5)}>
-            <Text style={styles.modalOption}>0.5x</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handlePlaybackRateChange(1.0)}>
-            <Text style={styles.modalOption}>1.0x</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handlePlaybackRateChange(1.5)}>
-            <Text style={styles.modalOption}>1.5x</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handlePlaybackRateChange(2.0)}>
-            <Text style={styles.modalOption}>2.0x</Text>
-          </TouchableOpacity>
-        </View>
-      </Modal>
       <Modal
         isVisible={showQualityOptions}
         onBackdropPress={() => setShowQualityOptions(false)}>
