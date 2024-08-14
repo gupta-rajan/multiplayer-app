@@ -21,7 +21,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 5,
   },
 
-  //Volume controls
+  //Volume controls ---------------------------------------------------------------
   volumeControlContainer: {
     justifyContent: 'center',
     alignItems: 'center',
@@ -52,7 +52,7 @@ const styles = StyleSheet.create({
     zIndex: 1, // Ensure it's below the volume icon
   },
 
-  //music track controls
+  //music track controls----------------------------------------------------------------
   musicControlContainer: {
     justifyContent: 'center',
     alignItems: 'center',
@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
     height: 100, // Adjust height as needed
   },
 
-  //Playback options
+  //Playback options ----------------------------------------------------------------
   playbackControlContainer: {
     justifyContent: 'center',
     alignItems: 'center',
@@ -137,6 +137,33 @@ const styles = StyleSheet.create({
     textAlign: 'center', // Center text within each option
   },
 
+  //Quality options ----------------------------------------------------------------
+  qualityControlContainer: {
+    // Style for the container of the quality options button
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 10,
+  },
+  
+  qualityOptionsContainer: {
+    // Style for the animated container of quality options
+    position: 'absolute',
+    bottom: 40,
+    right: 0,
+    backgroundColor: '#1A2130',
+    borderRadius: 10,
+    padding: 10, // Optional: padding around the options
+    zIndex: 1, // Ensure it's below the playback icon
+    width: 55,
+  },
+  
+  qualityOption: {
+    // Style for each quality option
+    color: '#FFF',
+    fontSize: 12,
+    paddingVertical: 5,
+  },
+  
   settingsIconContainer: {
     position: 'relative',
   },

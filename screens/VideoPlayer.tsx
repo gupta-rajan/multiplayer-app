@@ -38,7 +38,6 @@ const VideoPlayer = () => {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isFullScreen, setIsFullScreen] = useState(false);
-  const [showQualityOptions, setShowQualityOptions] = useState(false);
 
   //Volume
   const [volume, setVolume] = useState(1.0);
@@ -62,7 +61,11 @@ const VideoPlayer = () => {
   const playbackScale = useRef(new Animated.Value(0)).current;
   const playbackOpacity = useRef(new Animated.Value(0)).current;
 
+  //quality changes
+  const [showQualityOptions, setShowQualityOptions] = useState(false);
   const [selectedQuality, setSelectedQuality] = useState('auto');
+  const qualityAnimation = useRef(new Animated.Value(0)).current;
+
   const [feedbackMessage, setFeedbackMessage] = useState('');
   const [videoUrls, setVideoUrls] = useState({
     '1080p': '',
@@ -79,7 +82,6 @@ const VideoPlayer = () => {
 
   const currentTimeRef = useRef<number>(0);
 
-  const qualityAnimation = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     const fetchData = async () => {
@@ -509,6 +511,7 @@ const VideoPlayer = () => {
     setShowMusicTracks(!showMusicTracks);
   };
 
+  //Music tracks
   const toggleMusicTracks = () => {
     if (showMusicTracks) {
       Animated.timing(trackAnimation, {
@@ -526,14 +529,23 @@ const VideoPlayer = () => {
     }
   };
 
+  //Quality options
   const toggleQualityOptions = () => {
-    setShowQualityOptions(!showQualityOptions);
-    Animated.timing(qualityAnimation, {
-      toValue: showQualityOptions ? 0 : 1,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
-  };
+    if (showQualityOptions) {
+      Animated.timing(qualityAnimation, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start(() => setShowQualityOptions(false));
+    } else {
+      setShowQualityOptions(true);
+      Animated.timing(qualityAnimation, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    }
+  };  
 
   return (
     <SafeAreaView style={styles.container}>
@@ -551,9 +563,9 @@ const VideoPlayer = () => {
         onProgress={handleProgress}
         onLoad={handleLoad}
         onEnd={handleEnd}
-        onBuffer={() => {
-          showFeedback('Buffering...');
-        }}
+        // onBuffer={() => {
+        //   showFeedback('Buffering...');
+        // }}
         onError={error => {
           showFeedback('Error loading video');
           console.error(error);
@@ -679,9 +691,32 @@ const VideoPlayer = () => {
             </Animated.View>
           )}
         </View>
-        <TouchableOpacity onPress={() => setShowQualityOptions(true)}>
-          <Ionicons name="settings" size={24} color="#FFF" />
-        </TouchableOpacity>
+        <View style={styles.qualityControlContainer}>
+          <TouchableOpacity onPress={toggleQualityOptions}>
+            <Ionicons name="settings" size={24} color="#FFF" />
+          </TouchableOpacity>
+          {showQualityOptions && (
+            <Animated.View
+              style={[
+                styles.qualityOptionsContainer,
+                {
+                  transform: [{ scaleY: qualityAnimation }],
+                  opacity: qualityAnimation,
+                },
+              ]}
+            >
+              <TouchableOpacity onPress={() => handleQualityChange('1080p')}>
+                <Text style={styles.qualityOption}>1080p</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => handleQualityChange('720p')}>
+                <Text style={styles.qualityOption}>720p</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => handleQualityChange('480p')}>
+                <Text style={styles.qualityOption}>480p</Text>
+              </TouchableOpacity>
+            </Animated.View>
+          )}
+        </View>
         <TouchableOpacity onPress={toggleFullScreen}>
           <Ionicons
             name={isFullScreen ? 'contract' : 'expand'}
@@ -694,21 +729,6 @@ const VideoPlayer = () => {
         </TouchableOpacity>
       </View>
       <Text style={styles.subtitle}>{subtitles}</Text>
-      <Modal
-        isVisible={showQualityOptions}
-        onBackdropPress={() => setShowQualityOptions(false)}>
-        <View style={styles.modalContent}>
-          <TouchableOpacity onPress={() => handleQualityChange('1080p')}>
-            <Text style={styles.modalOption}>1080p</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleQualityChange('720p')}>
-            <Text style={styles.modalOption}>720p</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleQualityChange('480p')}>
-            <Text style={styles.modalOption}>480p</Text>
-          </TouchableOpacity>
-        </View>
-      </Modal>
       <Modal
         isVisible={showSubtitleOptions}
         onBackdropPress={() => setShowSubtitleOptions(false)}>
