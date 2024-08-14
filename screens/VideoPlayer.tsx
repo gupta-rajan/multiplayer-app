@@ -1,19 +1,29 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { SafeAreaView, View, TouchableOpacity, Text, StyleSheet, Animated, Alert } from 'react-native';
+import React, {useState, useRef, useEffect} from 'react';
+import {
+  SafeAreaView,
+  View,
+  TouchableOpacity,
+  Text,
+  StyleSheet,
+  Animated,
+  Alert,
+} from 'react-native';
 import Video from 'react-native-video';
 import Slider from '@react-native-community/slider';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import Orientation from 'react-native-orientation-locker';
 import Modal from 'react-native-modal';
 import NetInfo from '@react-native-community/netinfo';
-import { Parser } from 'm3u8-parser';
+import {Parser} from 'm3u8-parser';
 import Sound from 'react-native-sound';
 import styles from '../styles/videoPlayerStyles'; // Adjust the path as needed
 
-const formatTime = (time) => {
+const formatTime = time => {
   const minutes = Math.floor(time / 60);
   const seconds = Math.floor(time % 60);
-  return `${minutes < 10 ? `0${minutes}` : minutes}:${seconds < 10 ? `0${seconds}` : seconds}`;
+  return `${minutes < 10 ? `0${minutes}` : minutes}:${
+    seconds < 10 ? `0${seconds}` : seconds
+  }`;
 };
 
 const VideoPlayer = () => {
@@ -45,13 +55,12 @@ const VideoPlayer = () => {
     outputRange: [0, 1],
   });
 
-
   const [selectedQuality, setSelectedQuality] = useState('auto');
   const [feedbackMessage, setFeedbackMessage] = useState('');
   const [videoUrls, setVideoUrls] = useState({
     '1080p': '',
     '720p': '',
-    '480p': ''
+    '480p': '',
   });
   const [videoUrl, setVideoUrl] = useState('');
   const [subtitles, setSubtitles] = useState('');
@@ -69,16 +78,20 @@ const VideoPlayer = () => {
     const fetchData = async () => {
       try {
         // Fetch content data
-        const response = await fetch('https://api.shaale.in/api/v1/content/rHo64ErZeuih5UUZgZGZ?type=song&itemId=c7b21fc8-df56-479f-be66-b2fe881a593a');
+        const response = await fetch(
+          'https://api.shaale.in/api/v1/content/rHo64ErZeuih5UUZgZGZ?type=song&itemId=c7b21fc8-df56-479f-be66-b2fe881a593a',
+        );
         const data = await response.json();
-        
+
         // Extract streaming URL
-        const songContent = data.data.contents.find(content => content.song_id === 'rHo64ErZeuih5UUZgZGZ');
+        const songContent = data.data.contents.find(
+          content => content.song_id === 'rHo64ErZeuih5UUZgZGZ',
+        );
         if (!songContent) {
           throw new Error('Song content not found');
         }
         const streamingUrl = songContent.streamingUrl;
-        
+
         // Fetch and parse M3U8 data
         const responseM3U8 = await fetch(streamingUrl);
         const m3u8Text = await responseM3U8.text();
@@ -86,39 +99,58 @@ const VideoPlayer = () => {
         parser.push(m3u8Text);
         parser.end();
         const manifest = parser.manifest;
-        
+
         // Build quality URLs
         const playlists = manifest.playlists;
         const baseUrl = streamingUrl.split('/').slice(0, -1).join('/');
         const qualityUrls = {
-          '1080p': playlists.find(p => p.attributes.RESOLUTION.height === 1080)?.uri ? `${baseUrl}/${playlists.find(p => p.attributes.RESOLUTION.height === 1080)?.uri}` : '',
-          '720p': playlists.find(p => p.attributes.RESOLUTION.height === 720)?.uri ? `${baseUrl}/${playlists.find(p => p.attributes.RESOLUTION.height === 720)?.uri}` : '',
-          '480p': playlists.find(p => p.attributes.RESOLUTION.height === 480)?.uri ? `${baseUrl}/${playlists.find(p => p.attributes.RESOLUTION.height === 480)?.uri}` : ''
+          '1080p': playlists.find(p => p.attributes.RESOLUTION.height === 1080)
+            ?.uri
+            ? `${baseUrl}/${
+                playlists.find(p => p.attributes.RESOLUTION.height === 1080)
+                  ?.uri
+              }`
+            : '',
+          '720p': playlists.find(p => p.attributes.RESOLUTION.height === 720)
+            ?.uri
+            ? `${baseUrl}/${
+                playlists.find(p => p.attributes.RESOLUTION.height === 720)?.uri
+              }`
+            : '',
+          '480p': playlists.find(p => p.attributes.RESOLUTION.height === 480)
+            ?.uri
+            ? `${baseUrl}/${
+                playlists.find(p => p.attributes.RESOLUTION.height === 480)?.uri
+              }`
+            : '',
         };
-        
+
         // Set subtitle tracks
         const subtitleTracks = manifest.mediaGroups.SUBTITLES?.subs || [];
         setSubtitleTracks(subtitleTracks);
-        
+
         // Filter and set audio tracks
         const audioTracks = manifest.mediaGroups.AUDIO;
         const audioTrackKeys = Object.keys(audioTracks);
-        const randomKey = audioTrackKeys[Math.floor(Math.random() * audioTrackKeys.length)];
+        const randomKey =
+          audioTrackKeys[Math.floor(Math.random() * audioTrackKeys.length)];
         const audioTracksObject = audioTracks[randomKey];
         const audioTracksArray = Object.keys(audioTracksObject).map(key => ({
           ...audioTracksObject[key],
-          name: key
+          name: key,
         }));
-  
+
         // Filter out 'Mix' tracks
-        const filteredAudioTracks = audioTracksArray.filter(track => track.name !== 'Mix');
+        const filteredAudioTracks = audioTracksArray.filter(
+          track => track.name !== 'Mix',
+        );
         setAudioTracks(filteredAudioTracks);
-  
+
         // Initialize audio elements and track volumes
         const initialTrackVolumes = {};
         const initialAudioElements = filteredAudioTracks.map(track => {
           initialTrackVolumes[track.name] = 1;
-          const sound = new Sound(`${baseUrl}/${track.uri}`, null, (error) => {
+          const sound = new Sound(`${baseUrl}/${track.uri}`, null, error => {
             if (error) {
               console.log('Failed to load the sound', error);
             }
@@ -128,28 +160,27 @@ const VideoPlayer = () => {
           sound.setVolume(1); // Set default volume
           return {
             name: track.name,
-            sound
+            sound,
           };
-        });  
+        });
         setAudioElements(initialAudioElements);
         setTrackVolumes(initialTrackVolumes);
-  
+
         // Set video URLs and default URL
         setVideoUrls(qualityUrls);
         setVideoUrl(qualityUrls['auto'] || qualityUrls['480p']);
-        
       } catch (error) {
         console.error('Error fetching data:', error);
       }
     };
-  
+
     fetchData();
   }, []);
 
   useEffect(() => {
     return () => {
       // Cleanup audio elements
-      audioElements.forEach(({ sound }) => {
+      audioElements.forEach(({sound}) => {
         sound.release();
       });
     };
@@ -163,11 +194,10 @@ const VideoPlayer = () => {
       useNativeDriver: true,
     }).start();
   }, [showMusicTracks]);
-  
 
   useEffect(() => {
-    const handleNetworkChange = (state) => {
-      const { type } = state;
+    const handleNetworkChange = state => {
+      const {type} = state;
       if (type === 'wifi') {
         setVideoUrl(videoUrls['1080p'] || videoUrls['auto']);
       } else if (type === 'cellular') {
@@ -187,13 +217,13 @@ const VideoPlayer = () => {
   useEffect(() => {
     // Handle play/pause synchronization
     if (audioElements.length) {
-      audioElements.forEach(({ sound }) => {
+      audioElements.forEach(({sound}) => {
         if (isPaused) {
           sound.setCurrentTime(currentTime);
           sound.pause();
         } else {
           sound.setCurrentTime(currentTime);
-          sound.play((success) => {
+          sound.play(success => {
             if (!success) {
               console.log('Playback failed due to audio decoding errors');
             }
@@ -202,27 +232,26 @@ const VideoPlayer = () => {
       });
     }
   }, [isPaused, audioElements]);
-  
 
   useEffect(() => {
     // Handle volume change synchronization
     if (audioElements.length) {
-      audioElements.forEach(({ sound }) => sound.setVolume(volume));
+      audioElements.forEach(({sound}) => sound.setVolume(volume));
     }
   }, [volume, audioElements]);
 
   useEffect(() => {
     // Handle playback rate change synchronization
     if (audioElements.length) {
-      audioElements.forEach(({ sound }) => sound.setSpeed(playbackRate));
+      audioElements.forEach(({sound}) => sound.setSpeed(playbackRate));
     }
   }, [playbackRate, audioElements]);
 
   useEffect(() => {
     if (audioElements.length) {
-      audioElements.forEach(({ sound }) => {
+      audioElements.forEach(({sound}) => {
         const syncThreshold = 1;
-        sound.getCurrentTime((audioCurrentTime) => {
+        sound.getCurrentTime(audioCurrentTime => {
           const timeDifference = Math.abs(audioCurrentTime - currentTime);
           // console.log("time diff: "+timeDifference);
           if (timeDifference > syncThreshold) {
@@ -234,12 +263,20 @@ const VideoPlayer = () => {
     }
   }, [currentTime, audioElements]);
 
-  const showFeedback = (message) => {
+  const showFeedback = message => {
     setFeedbackMessage(message);
     Animated.sequence([
-      Animated.timing(feedbackOpacity, { toValue: 1, duration: 200, useNativeDriver: true }),
+      Animated.timing(feedbackOpacity, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }),
       Animated.delay(800),
-      Animated.timing(feedbackOpacity, { toValue: 0, duration: 200, useNativeDriver: true })
+      Animated.timing(feedbackOpacity, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
     ]).start();
   };
 
@@ -253,11 +290,11 @@ const VideoPlayer = () => {
     setIsPaused(!isPaused);
     showFeedback(isPaused ? 'Play' : 'Pause');
     if (audioElements.length) {
-      audioElements.forEach(({ sound }) => {
+      audioElements.forEach(({sound}) => {
         if (isPaused) {
           sound.pause();
         } else {
-          sound.play((success) => {
+          sound.play(success => {
             if (!success) {
               console.log('Playback failed due to audio decoding errors');
             }
@@ -267,30 +304,30 @@ const VideoPlayer = () => {
     }
   };
 
-  const handleVolumeChange = (value) => {
+  const handleVolumeChange = value => {
     setVolume(value);
     showFeedback(`Volume: ${Math.round(value * 100)}%`);
     // setIsMuted(value === 0);
     if (audioElements.length) {
-      audioElements.forEach(({ sound }) => sound.setVolume(value));
+      audioElements.forEach(({sound}) => sound.setVolume(value));
     }
   };
 
-  const handlePlaybackRateChange = (rate) => {
+  const handlePlaybackRateChange = rate => {
     setPlaybackRate(rate);
     showFeedback(`Speed: ${rate}x`);
     setShowPlaybackOptions(false);
     if (audioElements.length) {
-      audioElements.forEach(({ sound }) => sound.setSpeed(rate));
+      audioElements.forEach(({sound}) => sound.setSpeed(rate));
     }
   };
 
-  const handleProgress = (data) => {
+  const handleProgress = data => {
     currentTimeRef.current = data.currentTime;
 
     setCurrentTime(data.currentTime);
     // setDuration(data.playableDuration);
-    
+
     // Sync audio with video if needed
     // if (audioElements.length) {
     //   audioElements.forEach(({ sound }) => {
@@ -308,7 +345,7 @@ const VideoPlayer = () => {
     // }
   };
 
-  const handleLoad = (data) => {
+  const handleLoad = data => {
     setDuration(data.duration);
     setCurrentTime(data.currentTime);
   };
@@ -318,17 +355,16 @@ const VideoPlayer = () => {
     playerRef.current.seek(0);
   };
 
-  const handleSeek = (value) => {
+  const handleSeek = value => {
     playerRef.current.seek(value);
     setCurrentTime(value);
     if (audioElements.length) {
-      audioElements.forEach(({ sound }) => sound.setCurrentTime(value));
+      audioElements.forEach(({sound}) => sound.setCurrentTime(value));
     }
     showFeedback(`Seeked to ${formatTime(value)}`);
   };
-  
 
-  const handleQualityChange = (quality) => {
+  const handleQualityChange = quality => {
     setSelectedQuality(quality);
     showFeedback(`Quality: ${quality}`);
     setShowQualityOptions(false);
@@ -340,20 +376,20 @@ const VideoPlayer = () => {
     playerRef.current.seek(newTime);
     setCurrentTime(newTime);
     if (audioElements.length) {
-      audioElements.forEach(({ sound }) => sound.setCurrentTime(newTime));
+      audioElements.forEach(({sound}) => sound.setCurrentTime(newTime));
     }
     showFeedback('>> 10 seconds');
   };
-  
+
   const skipBackward = () => {
     const newTime = Math.max(currentTime - 10, 0);
     playerRef.current.seek(newTime);
     setCurrentTime(newTime);
     if (audioElements.length) {
-      audioElements.forEach(({ sound }) => sound.setCurrentTime(newTime));
+      audioElements.forEach(({sound}) => sound.setCurrentTime(newTime));
     }
     showFeedback('<< 10 seconds');
-  };  
+  };
 
   const toggleFullScreen = () => {
     setIsFullScreen(!isFullScreen);
@@ -401,7 +437,7 @@ const VideoPlayer = () => {
     setShowSubtitleOptions(!showSubtitleOptions);
   };
 
-  const handleSubtitleChange = async (type) => {
+  const handleSubtitleChange = async type => {
     setSelectedSubtitle(type);
     setShowSubtitleOptions(false);
     showFeedback(`Subtitles: ${type}`);
@@ -414,7 +450,7 @@ const VideoPlayer = () => {
   };
 
   const handleTrackVolumeChange = (trackName, value) => {
-    setTrackVolumes(prevVolumes => ({ ...prevVolumes, [trackName]: value }));
+    setTrackVolumes(prevVolumes => ({...prevVolumes, [trackName]: value}));
     showFeedback(`Track ${trackName} Volume: ${Math.round(value * 100)}%`);
     const track = audioElements.find(element => element.name === trackName);
     if (track) track.sound.setVolume(value);
@@ -425,7 +461,20 @@ const VideoPlayer = () => {
   };
 
   const toggleMusicTracks = () => {
-    setShowMusicTracks(!showMusicTracks);
+    if (showMusicTracks) {
+      Animated.timing(trackAnimation, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start(() => setShowMusicTracks(false));
+    } else {
+      setShowMusicTracks(true);
+      Animated.timing(trackAnimation, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    }
   };
 
   const toggleQualityOptions = () => {
@@ -441,7 +490,7 @@ const VideoPlayer = () => {
     <SafeAreaView style={styles.container}>
       <Video
         ref={playerRef}
-        source={{ uri: videoUrl }}
+        source={{uri: videoUrl}}
         style={styles.video}
         controls={false}
         resizeMode="contain"
@@ -449,14 +498,14 @@ const VideoPlayer = () => {
         paused={isPaused}
         volume={isMuted ? 0 : volume}
         rate={playbackRate}
-        onError={(e) => console.log(e)}
+        onError={e => console.log(e)}
         onProgress={handleProgress}
         onLoad={handleLoad}
         onEnd={handleEnd}
         onBuffer={() => {
           showFeedback('Buffering...');
         }}
-        onError={(error) => {
+        onError={error => {
           showFeedback('Error loading video');
           console.error(error);
         }}
@@ -482,7 +531,9 @@ const VideoPlayer = () => {
           <Ionicons name="play-forward" size={24} color="#FFF" />
         </TouchableOpacity>
         <View style={styles.volumeControlContainer}>
-          <TouchableOpacity onPress={toggleVolumeSlider} style={styles.volumeIconContainer}>
+          <TouchableOpacity
+            onPress={toggleVolumeSlider}
+            style={styles.volumeIconContainer}>
             <Ionicons name="volume-medium" size={24} color="#FFF" />
           </TouchableOpacity>
           {showVolumeSlider && (
@@ -490,11 +541,10 @@ const VideoPlayer = () => {
               style={[
                 styles.volumeContainer,
                 {
-                  transform: [{ scaleY: volumeScale }],
+                  transform: [{scaleY: volumeScale}],
                   opacity: volumeOpacity,
                 },
-              ]}
-            >
+              ]}>
               <Slider
                 style={styles.volumeSlider}
                 value={volume}
@@ -511,7 +561,9 @@ const VideoPlayer = () => {
         </View>
 
         <View style={styles.musicControlContainer}>
-          <TouchableOpacity onPress={toggleMusicTracks} style={styles.musicIconContainer}>
+          <TouchableOpacity
+            onPress={toggleMusicTracks}
+            style={styles.musicIconContainer}>
             <Ionicons name="musical-notes" size={24} color="#FFF" />
           </TouchableOpacity>
           {showMusicTracks && (
@@ -519,18 +571,26 @@ const VideoPlayer = () => {
               style={[
                 styles.trackContainer,
                 {
-                  transform: [{ scaleY: trackScale }],
+                  transform: [{scaleY: trackScale}],
                   opacity: trackAnimation,
                 },
-              ]}
-            >
+              ]}>
               <View style={styles.trackRow}>
+
                 {audioTracks.map(track => (
                   <View key={track.name} style={styles.trackColumn}>
                     <Slider
                       style={styles.trackSlider}
+                      minimumValue={0}
+                      maximumValue={1}
+                      step={0.1}
+                      minimumTrackTintColor="#1EB1FC"
+                      maximumTrackTintColor="#1EB1FC"
                       value={trackVolumes[track.name] || 1}
-                      onValueChange={(value) => handleTrackVolumeChange(track.name, value)}
+                      thumbTintColor="#1EB1FC"
+                      onValueChange={(value) =>
+                        handleTrackVolumeChange(track.name, value)
+                      }
                     />
                     <Text style={styles.trackName}>{track.name}</Text>
                   </View>
@@ -547,14 +607,20 @@ const VideoPlayer = () => {
           <Ionicons name="settings" size={24} color="#FFF" />
         </TouchableOpacity>
         <TouchableOpacity onPress={toggleFullScreen}>
-          <Ionicons name={isFullScreen ? 'contract' : 'expand'} size={24} color="#FFF" />
+          <Ionicons
+            name={isFullScreen ? 'contract' : 'expand'}
+            size={24}
+            color="#FFF"
+          />
         </TouchableOpacity>
         <TouchableOpacity onPress={toggleSubtitleOptions}>
           <Ionicons name="film" size={24} color="#FFF" />
         </TouchableOpacity>
       </View>
       <Text style={styles.subtitle}>{subtitles}</Text>
-      <Modal isVisible={showPlaybackOptions} onBackdropPress={() => setShowPlaybackOptions(false)}>
+      <Modal
+        isVisible={showPlaybackOptions}
+        onBackdropPress={() => setShowPlaybackOptions(false)}>
         <View style={styles.modalContent}>
           <TouchableOpacity onPress={() => handlePlaybackRateChange(0.5)}>
             <Text style={styles.modalOption}>0.5x</Text>
@@ -570,7 +636,9 @@ const VideoPlayer = () => {
           </TouchableOpacity>
         </View>
       </Modal>
-      <Modal isVisible={showQualityOptions} onBackdropPress={() => setShowQualityOptions(false)}>
+      <Modal
+        isVisible={showQualityOptions}
+        onBackdropPress={() => setShowQualityOptions(false)}>
         <View style={styles.modalContent}>
           <TouchableOpacity onPress={() => handleQualityChange('1080p')}>
             <Text style={styles.modalOption}>1080p</Text>
@@ -583,7 +651,9 @@ const VideoPlayer = () => {
           </TouchableOpacity>
         </View>
       </Modal>
-      <Modal isVisible={showSubtitleOptions} onBackdropPress={() => setShowSubtitleOptions(false)}>
+      <Modal
+        isVisible={showSubtitleOptions}
+        onBackdropPress={() => setShowSubtitleOptions(false)}>
         <View style={styles.modalContent}>
           <TouchableOpacity onPress={() => handleSubtitleChange('Lyrics')}>
             <Text style={styles.modalOption}>Lyrics</Text>
@@ -596,7 +666,7 @@ const VideoPlayer = () => {
           </TouchableOpacity>
         </View>
       </Modal>
-      <Animated.View style={[styles.feedback, { opacity: feedbackOpacity }]}>
+      <Animated.View style={[styles.feedback, {opacity: feedbackOpacity}]}>
         <Text style={styles.feedbackText}>{feedbackMessage}</Text>
       </Animated.View>
     </SafeAreaView>

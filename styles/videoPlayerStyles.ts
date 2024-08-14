@@ -64,28 +64,43 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  
   trackContainer: {
     position: 'absolute',
-    bottom: 40, // Positioning the track container above the music icon
-    flexDirection: 'row', // Align tracks in a row
-    alignItems: 'flex-end', // Align tracks to the bottom
+    bottom: 40,
+    flexDirection: 'row',
+    justifyContent: 'center', // Center the track row above the music icon
+    alignItems: 'center', // Center contents vertically
+    paddingHorizontal: 10,
+    zIndex: 1, // Ensure it's above other elements
+    // backgroundColor: '#1A2130', // Adjust the background color for better visibility
+    borderRadius: 10, // Optional: rounded corners for aesthetics
+    // padding: 10, // Optional: padding around the slider
   },
   trackRow: {
     flexDirection: 'row',
-    justifyContent: 'space-evenly', // Distribute columns evenly
+    justifyContent: 'center', // Distribute columns evenly
+    backgroundColor: '#1A2130', 
+    // backgroundColor: 'white',
+    width: 800,
   },
   trackColumn: {
     alignItems: 'center',
+    justifyContent: 'center', // Distribute space between track name and slider
+    width: 60, // Adjust width to fit the track slider and name comfortably
+    // backgroundColor: '#1A2130', // Background color for better contrast
+    paddingVertical: 10, // Padding around the content
   },
   track: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 10, // Adjust as needed
+    marginVertical: 5, // Adjust as needed
   },
   trackName: {
     color: '#FFF',
     fontSize: 9,
     marginBottom: 5,
+    textAlign: 'center',
   },
   trackSlider: {
     transform: [{ rotate: '-90deg' }], // Rotate the slider to make it vertical
