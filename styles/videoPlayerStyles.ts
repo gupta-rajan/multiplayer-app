@@ -21,7 +21,6 @@ const styles = StyleSheet.create({
     marginHorizontal: 5,
   },
 
-
   //Volume controls
   volumeControlContainer: {
     justifyContent: 'center',
@@ -58,33 +57,42 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 10,
+    position: 'relative', // Ensure positioning context for children
   },
   musicIconContainer: {
-    position: 'relative',
-    zIndex: 1,
+    zIndex: 2, // Ensure the volume icon is above the volume slider
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   trackContainer: {
     position: 'absolute',
-    bottom: 70,
-    right: 10,
-    width: 250,
-    backgroundColor: '#1E1E1E',
-    borderRadius: 10,
-    padding: 10,
-    zIndex: 10,
+    bottom: 40, // Positioning the track container above the music icon
+    flexDirection: 'row', // Align tracks in a row
+    alignItems: 'flex-end', // Align tracks to the bottom
+  },
+  trackRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-evenly', // Distribute columns evenly
+  },
+  trackColumn: {
+    alignItems: 'center',
   },
   track: {
-    marginBottom: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 10, // Adjust as needed
   },
   trackName: {
     color: '#FFF',
-    fontSize: 16,
+    fontSize: 9,
     marginBottom: 5,
   },
   trackSlider: {
-    width: '100%',
-    height: 40,
+    transform: [{ rotate: '-90deg' }], // Rotate the slider to make it vertical
+    width: 100, // Adjust width as needed
+    height: 100, // Adjust height as needed
   },
+
   settingsIconContainer: {
     position: 'relative',
   },

@@ -510,18 +510,6 @@ const VideoPlayer = () => {
           )}
         </View>
 
-        <TouchableOpacity onPress={() => setShowPlaybackOptions(true)}>
-          <Ionicons name="speedometer" size={24} color="#FFF" />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => setShowQualityOptions(true)}>
-          <Ionicons name="settings" size={24} color="#FFF" />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={toggleFullScreen}>
-          <Ionicons name={isFullScreen ? 'contract' : 'expand'} size={24} color="#FFF" />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={toggleSubtitleOptions}>
-          <Ionicons name="film" size={24} color="#FFF" />
-        </TouchableOpacity>
         <View style={styles.musicControlContainer}>
           <TouchableOpacity onPress={toggleMusicTracks} style={styles.musicIconContainer}>
             <Ionicons name="musical-notes" size={24} color="#FFF" />
@@ -536,19 +524,34 @@ const VideoPlayer = () => {
                 },
               ]}
             >
-              {audioTracks.map(track => (
-                <View key={track.name} style={styles.track}>
-                  <Text style={styles.trackName}>{track.name}</Text>
-                  <Slider
-                    style={styles.trackSlider}
-                    value={trackVolumes[track.name] || 1}
-                    onValueChange={(value) => handleTrackVolumeChange(track.name, value)}
-                  />
-                </View>
-              ))}
+              <View style={styles.trackRow}>
+                {audioTracks.map(track => (
+                  <View key={track.name} style={styles.trackColumn}>
+                    <Slider
+                      style={styles.trackSlider}
+                      value={trackVolumes[track.name] || 1}
+                      onValueChange={(value) => handleTrackVolumeChange(track.name, value)}
+                    />
+                    <Text style={styles.trackName}>{track.name}</Text>
+                  </View>
+                ))}
+              </View>
             </Animated.View>
           )}
         </View>
+
+        <TouchableOpacity onPress={() => setShowPlaybackOptions(true)}>
+          <Ionicons name="speedometer" size={24} color="#FFF" />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => setShowQualityOptions(true)}>
+          <Ionicons name="settings" size={24} color="#FFF" />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={toggleFullScreen}>
+          <Ionicons name={isFullScreen ? 'contract' : 'expand'} size={24} color="#FFF" />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={toggleSubtitleOptions}>
+          <Ionicons name="film" size={24} color="#FFF" />
+        </TouchableOpacity>
       </View>
       <Text style={styles.subtitle}>{subtitles}</Text>
       <Modal isVisible={showPlaybackOptions} onBackdropPress={() => setShowPlaybackOptions(false)}>
