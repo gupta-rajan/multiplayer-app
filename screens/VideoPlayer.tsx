@@ -29,6 +29,10 @@ const VideoPlayer = () => {
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [showPlaybackOptions, setShowPlaybackOptions] = useState(false);
   const [showQualityOptions, setShowQualityOptions] = useState(false);
+
+  //Volume slider
+  const volumeScale = useRef(new Animated.Value(0)).current;
+  const volumeOpacity = useRef(new Animated.Value(0)).current;
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
   const [selectedQuality, setSelectedQuality] = useState('auto');
   const [feedbackMessage, setFeedbackMessage] = useState('');
@@ -48,6 +52,8 @@ const VideoPlayer = () => {
   const [trackVolumes, setTrackVolumes] = useState({});
 
   const currentTimeRef = useRef<number>(0);
+
+  const qualityAnimation = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     const fetchData = async () => {
@@ -199,9 +205,9 @@ const VideoPlayer = () => {
         const syncThreshold = 1;
         sound.getCurrentTime((audioCurrentTime) => {
           const timeDifference = Math.abs(audioCurrentTime - currentTime);
-          console.log("time diff: "+timeDifference);
+          // console.log("time diff: "+timeDifference);
           if (timeDifference > syncThreshold) {
-            console.log("curr time: "+currentTime);
+            // console.log("curr time: "+currentTime);
             sound.setCurrentTime(currentTime);
           }
         });
@@ -340,7 +346,36 @@ const VideoPlayer = () => {
   };
 
   const toggleVolumeSlider = () => {
-    setShowVolumeSlider(!showVolumeSlider);
+    if (showVolumeSlider) {
+      // Close the slider
+      Animated.parallel([
+        Animated.timing(volumeScale, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(volumeOpacity, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start(() => setShowVolumeSlider(false));
+    } else {
+      // Open the slider
+      setShowVolumeSlider(true);
+      Animated.parallel([
+        Animated.timing(volumeScale, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(volumeOpacity, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
   };
 
   const toggleSubtitleOptions = () => {
@@ -372,6 +407,15 @@ const VideoPlayer = () => {
 
   const toggleMusicTracks = () => {
     setShowMusicTracks(!showMusicTracks);
+  };
+
+  const toggleQualityOptions = () => {
+    setShowQualityOptions(!showQualityOptions);
+    Animated.timing(qualityAnimation, {
+      toValue: showQualityOptions ? 0 : 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
   };
 
   return (
@@ -418,32 +462,35 @@ const VideoPlayer = () => {
         <TouchableOpacity onPress={skipForward}>
           <Ionicons name="play-forward" size={24} color="#FFF" />
         </TouchableOpacity>
-        <TouchableOpacity onPress={toggleVolumeSlider} style={styles.volumeIconContainer}>
-          <Ionicons name="volume-medium" size={24} color="#FFF" />
-        </TouchableOpacity>
-        {showVolumeSlider && (
-          <Animated.View
-            style={[
-              styles.volumeContainer,
-              {
-                height: showVolumeSlider ? 80 : 0, // Adjust this height value as needed
-                opacity: showVolumeSlider ? 1 : 0,
-              },
-            ]}
-          >
-            <Slider
-              style={styles.volumeSlider}
-              value={volume}
-              minimumValue={0}
-              maximumValue={1}
-              step={0.1}
-              minimumTrackTintColor="#1EB1FC"
-              maximumTrackTintColor="#1EB1FC"
-              thumbTintColor="#1EB1FC"
-              onValueChange={handleVolumeChange}
-            />
-          </Animated.View>
-        )}
+        <View style={styles.volumeControlContainer}>
+          <TouchableOpacity onPress={toggleVolumeSlider} style={styles.volumeIconContainer}>
+            <Ionicons name="volume-medium" size={24} color="#FFF" />
+          </TouchableOpacity>
+          {showVolumeSlider && (
+            <Animated.View
+              style={[
+                styles.volumeContainer,
+                {
+                  transform: [{ scaleY: volumeScale }],
+                  opacity: volumeOpacity,
+                },
+              ]}
+            >
+              <Slider
+                style={styles.volumeSlider}
+                value={volume}
+                minimumValue={0}
+                maximumValue={1}
+                step={0.1}
+                minimumTrackTintColor="#1EB1FC"
+                maximumTrackTintColor="#1EB1FC"
+                thumbTintColor="#1EB1FC"
+                onValueChange={handleVolumeChange}
+              />
+            </Animated.View>
+          )}
+        </View>
+
         <TouchableOpacity onPress={() => setShowPlaybackOptions(true)}>
           <Ionicons name="speedometer" size={24} color="#FFF" />
         </TouchableOpacity>

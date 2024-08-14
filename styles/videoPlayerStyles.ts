@@ -20,32 +20,56 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     marginHorizontal: 5,
   },
+  volumeControlContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    position: 'relative', // Ensure positioning context for children
+  },
   volumeSlider: {
-    width: 90,  // Width of the slider itself, same as container width
-    height: '100%', // Full height of the container
-    transform: [{ rotate: '-90deg' }], // Rotate to make it vertical
-    transformOrigin: 'center',
+    transform: [{ rotate: '-90deg' }], // Rotate the slider to make it vertical
+    width: 100, // Adjust width as needed
+    height: 100, // Adjust height as needed
   },
   volumeIconContainer: {
-    position: 'relative', // Make sure the icon container has relative positioning
-  },
-  volumeControl: {
-    flexDirection: 'column',
+    zIndex: 2, // Ensure the volume icon is above the volume slider
+    justifyContent: 'center',
     alignItems: 'center',
-    position: 'relative', // Allow positioning of child components
   },
   volumeContainer: {
     position: 'absolute',
-    bottom: 70, // Adjust this to position the slider container above the volume icon
-    right: 220,  // Align it to the right side of the screen (same as volume icon)
-    width: 30,  // Width of the vertical slider container
-    height: 100, // Increase this to adjust the height of the container
+    bottom: 40, // Adjust this to position the slider container above the volume icon
+    right: 0, // Align the slider with the center of the volume icon
+    width: 30, // Width of the vertical slider container
+    height: 100, // Height of the vertical slider container
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#808080', // Background color around the slider
+    backgroundColor: '1A2130', // Background color around the slider
     borderRadius: 10, // Optional: rounded corners
     padding: 10, // Optional: padding around the slider
-    zIndex: 10, // Ensure it's above other components
+    zIndex: 1, // Ensure it's below the volume icon
+  },
+  settingsIconContainer: {
+    position: 'relative',
+  },
+  qualityContainer: {
+    position: 'absolute',
+    bottom: '100%', // Position above the settings icon
+    left: '50%',
+    transform: [{ translateX: -60 }], // Center horizontally with respect to the settings icon
+    backgroundColor: '#1E1E1E', // Background color around the options
+    borderRadius: 10,
+    padding: 10,
+    width: 120, // Adjust width as needed
+    zIndex: 50, // Ensure it appears above other elements
+  },
+  option: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+  },
+  optionText: {
+    color: '#FFF',
+    fontSize: 16,
   },
   durationContainer: {
     position: 'absolute',
@@ -74,7 +98,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 10,
   },
-  optionText: {
+  modalOptionText: {
     fontSize: 18,
     color: 'black',
   },
