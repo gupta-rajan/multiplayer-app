@@ -22,7 +22,6 @@ const VideoPlayer = () => {
 
   const [isMuted, setIsMuted] = useState(false);
   const [isPaused, setIsPaused] = useState(true);
-  const [volume, setVolume] = useState(1.0);
   const [playbackRate, setPlaybackRate] = useState(1.0);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -30,10 +29,23 @@ const VideoPlayer = () => {
   const [showPlaybackOptions, setShowPlaybackOptions] = useState(false);
   const [showQualityOptions, setShowQualityOptions] = useState(false);
 
-  //Volume slider
+  //Volume
+  const [volume, setVolume] = useState(1.0);
   const volumeScale = useRef(new Animated.Value(0)).current;
   const volumeOpacity = useRef(new Animated.Value(0)).current;
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
+
+  //Music Tracks
+  const [showMusicTracks, setShowMusicTracks] = useState(false);
+  const [trackVolumes, setTrackVolumes] = useState({});
+  const trackAnimation = useRef(new Animated.Value(0)).current; // For scaling effect
+
+  const trackScale = trackAnimation.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 1],
+  });
+
+
   const [selectedQuality, setSelectedQuality] = useState('auto');
   const [feedbackMessage, setFeedbackMessage] = useState('');
   const [videoUrls, setVideoUrls] = useState({
@@ -48,8 +60,6 @@ const VideoPlayer = () => {
   const [subtitleTracks, setSubtitleTracks] = useState({});
   const [audioTracks, setAudioTracks] = useState([]);
   const [audioElements, setAudioElements] = useState([]);
-  const [showMusicTracks, setShowMusicTracks] = useState(false);
-  const [trackVolumes, setTrackVolumes] = useState({});
 
   const currentTimeRef = useRef<number>(0);
 
@@ -144,6 +154,15 @@ const VideoPlayer = () => {
       });
     };
   }, [audioElements]);
+
+  //Music tracks animation
+  useEffect(() => {
+    Animated.timing(trackAnimation, {
+      toValue: showMusicTracks ? 1 : 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  }, [showMusicTracks]);
   
 
   useEffect(() => {
@@ -503,9 +522,33 @@ const VideoPlayer = () => {
         <TouchableOpacity onPress={toggleSubtitleOptions}>
           <Ionicons name="film" size={24} color="#FFF" />
         </TouchableOpacity>
-        <TouchableOpacity onPress={handleMusicIconPress}>
-          <Ionicons name="musical-notes-outline" size={24} color="#FFF" />
-        </TouchableOpacity>
+        <View style={styles.musicControlContainer}>
+          <TouchableOpacity onPress={toggleMusicTracks} style={styles.musicIconContainer}>
+            <Ionicons name="musical-notes" size={24} color="#FFF" />
+          </TouchableOpacity>
+          {showMusicTracks && (
+            <Animated.View
+              style={[
+                styles.trackContainer,
+                {
+                  transform: [{ scaleY: trackScale }],
+                  opacity: trackAnimation,
+                },
+              ]}
+            >
+              {audioTracks.map(track => (
+                <View key={track.name} style={styles.track}>
+                  <Text style={styles.trackName}>{track.name}</Text>
+                  <Slider
+                    style={styles.trackSlider}
+                    value={trackVolumes[track.name] || 1}
+                    onValueChange={(value) => handleTrackVolumeChange(track.name, value)}
+                  />
+                </View>
+              ))}
+            </Animated.View>
+          )}
+        </View>
       </View>
       <Text style={styles.subtitle}>{subtitles}</Text>
       <Modal isVisible={showPlaybackOptions} onBackdropPress={() => setShowPlaybackOptions(false)}>
@@ -548,25 +591,6 @@ const VideoPlayer = () => {
           <TouchableOpacity onPress={() => handleSubtitleChange('Notation')}>
             <Text style={styles.modalOption}>Notation</Text>
           </TouchableOpacity>
-        </View>
-      </Modal>
-
-      <Modal isVisible={showMusicTracks} onBackdropPress={() => setShowMusicTracks(false)}>
-        <View style={styles.modalContent}>
-          <TouchableOpacity onPress={handleMusicIconPress}>
-            <Ionicons name="close" size={30} color="black" />
-          </TouchableOpacity>
-          <Text style={styles.modalTitle}>Music Tracks</Text>
-          {audioTracks.map(track => (
-            <View key={track.name} style={styles.trackContainer}>
-              <Text style={styles.trackName}>{track.name}</Text>
-              <Slider
-                style={styles.trackSlider}
-                value={trackVolumes[track.name] || 1}
-                onValueChange={(value) => handleTrackVolumeChange(track.name, value)}
-              />
-            </View>
-          ))}
         </View>
       </Modal>
       <Animated.View style={[styles.feedback, { opacity: feedbackOpacity }]}>

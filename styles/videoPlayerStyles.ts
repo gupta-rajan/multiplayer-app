@@ -20,6 +20,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     marginHorizontal: 5,
   },
+
+
+  //Volume controls
   volumeControlContainer: {
     justifyContent: 'center',
     alignItems: 'center',
@@ -48,6 +51,39 @@ const styles = StyleSheet.create({
     borderRadius: 10, // Optional: rounded corners
     padding: 10, // Optional: padding around the slider
     zIndex: 1, // Ensure it's below the volume icon
+  },
+
+  //music track controls
+  musicControlContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+  },
+  musicIconContainer: {
+    position: 'relative',
+    zIndex: 1,
+  },
+  trackContainer: {
+    position: 'absolute',
+    bottom: 70,
+    right: 10,
+    width: 250,
+    backgroundColor: '#1E1E1E',
+    borderRadius: 10,
+    padding: 10,
+    zIndex: 10,
+  },
+  track: {
+    marginBottom: 10,
+  },
+  trackName: {
+    color: '#FFF',
+    fontSize: 16,
+    marginBottom: 5,
+  },
+  trackSlider: {
+    width: '100%',
+    height: 40,
   },
   settingsIconContainer: {
     position: 'relative',
