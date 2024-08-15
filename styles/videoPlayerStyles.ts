@@ -178,6 +178,51 @@ const styles = StyleSheet.create({
     width: 120, // Adjust width as needed
     zIndex: 50, // Ensure it appears above other elements
   },
+    // Subtitle options ----------------------------------------------------------------
+    subtitleControlContainer: {
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: 10,
+      position: 'relative', // Ensure positioning context for children
+    },
+    subtitleIconContainer: {
+      zIndex: 2, // Ensure the subtitle icon is above the subtitle options
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    subtitleOptionsContainer: {
+      position: 'absolute',
+      bottom: 40, // Adjust this to position the options container above the subtitle icon
+      right: 0, // Align the options with the center of the subtitle icon
+      backgroundColor: '#1A2130', // Background color around the options
+      borderRadius: 10, // Optional: rounded corners
+      padding: 10, // Optional: padding around the options
+      zIndex: 1, // Ensure it's below the subtitle icon
+      width: 100, // Adjust width as needed
+    },
+    subtitleOption: {
+      paddingVertical: 10, // Vertical padding for each option
+      color: '#FFF', // Text color for the options
+      fontSize: 12, // Font size for the options
+      textAlign: 'center', // Center text within each option
+    },
+    subtitleTextContainer: {
+      position: 'absolute',
+      bottom: 80, // Position the subtitle text above other elements
+      left: '50%',
+      transform: [{ translateX: -150 }], // Center horizontally
+      backgroundColor: '#1E1E1E', // Background color for better visibility
+      borderRadius: 10,
+      padding: 10,
+      width: 300, // Adjust width as needed
+      zIndex: 50, // Ensure it appears above other elements
+    },
+    subtitleText: {
+      color: 'white',
+      fontSize: 16,
+      textAlign: 'center',
+    },  
+
   option: {
     paddingVertical: 10,
     paddingHorizontal: 20,

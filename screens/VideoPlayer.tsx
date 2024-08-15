@@ -8,7 +8,7 @@ import {
   Animated,
   Alert,
 } from 'react-native';
-import Video from 'react-native-video';
+import Video , { TextTrackType } from 'react-native-video';
 import Slider from '@react-native-community/slider';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -18,6 +18,7 @@ import Orientation from 'react-native-orientation-locker';
 import Modal from 'react-native-modal';
 import NetInfo from '@react-native-community/netinfo';
 import {Parser} from 'm3u8-parser';
+import { WebVTTParser } from 'webvtt-parser';
 import Sound from 'react-native-sound';
 import styles from '../styles/videoPlayerStyles'; // Adjust the path as needed
 
@@ -30,6 +31,7 @@ const formatTime = time => {
 };
 
 const VideoPlayer = () => {
+  const [baseUrl, setbaseUrl] = useState('');
   const playerRef = useRef(null);
   const feedbackOpacity = useRef(new Animated.Value(0)).current;
 
@@ -53,6 +55,8 @@ const VideoPlayer = () => {
     inputRange: [0, 1],
     outputRange: [0, 1],
   });
+  const [audioTracks, setAudioTracks] = useState([]);
+  const [audioElements, setAudioElements] = useState([]);
 
   //Playback speeds
   const [playbackRate, setPlaybackRate] = useState(1.0);
@@ -73,12 +77,14 @@ const VideoPlayer = () => {
     '480p': '',
   });
   const [videoUrl, setVideoUrl] = useState('');
+
+
+  //Subtitle options
   const [subtitles, setSubtitles] = useState('');
   const [selectedSubtitle, setSelectedSubtitle] = useState('notations');
   const [showSubtitleOptions, setShowSubtitleOptions] = useState(false);
-  const [subtitleTracks, setSubtitleTracks] = useState({});
-  const [audioTracks, setAudioTracks] = useState([]);
-  const [audioElements, setAudioElements] = useState([]);
+  const [subtitleTracks, setSubtitleTracks] = useState([]);
+  const [subtitleText, setSubtitleText] = useState('');
 
   const currentTimeRef = useRef<number>(0);
 
@@ -112,6 +118,7 @@ const VideoPlayer = () => {
         // Build quality URLs
         const playlists = manifest.playlists;
         const baseUrl = streamingUrl.split('/').slice(0, -1).join('/');
+        setbaseUrl(baseUrl);
         const qualityUrls = {
           '1080p': playlists.find(p => p.attributes.RESOLUTION.height === 1080)
             ?.uri
@@ -136,7 +143,21 @@ const VideoPlayer = () => {
 
         // Set subtitle tracks
         const subtitleTracks = manifest.mediaGroups.SUBTITLES?.subs || [];
-        setSubtitleTracks(subtitleTracks);
+        const subtitleTracksArray = Object.keys(subtitleTracks).map(key => ({
+          ...subtitleTracks[key],
+          name: key,
+          uri: `${baseUrl}/${subtitleTracks[key].uri}`, // Add baseUrl to each track's URI
+        }));
+        setSubtitleTracks(subtitleTracksArray);
+        console.log(subtitleTracksArray);
+
+        // Set default subtitle (for example 'notations')
+        const defaultSubtitle = subtitleTracksArray.find(
+          track => track.name === 'notations',
+        );
+        if (defaultSubtitle) {
+          handleSubtitleChange(defaultSubtitle.name);
+        }
 
         // Filter and set audio tracks
         const audioTracks = manifest.mediaGroups.AUDIO;
@@ -322,7 +343,6 @@ const VideoPlayer = () => {
     }
   };
 
-  //Playback rate change handler
   // Playback rate change handler
   const handlePlaybackRateChange = (rate) => {
     // Only change the playback rate if the video is not paused
@@ -488,17 +508,102 @@ const VideoPlayer = () => {
     setShowSubtitleOptions(!showSubtitleOptions);
   };
 
-  const handleSubtitleChange = async type => {
+
+  //subtitle options
+  const handleSubtitleChange = async (type) => {
     setSelectedSubtitle(type);
     setShowSubtitleOptions(false);
-    showFeedback(`Subtitles: ${type}`);
+    showFeedback(`Subtitles: ${subtitleTracks[type].name}`);
+
     const selectedTrack = subtitleTracks[type];
+
     if (selectedTrack) {
-      const subtitleResponse = await fetch(selectedTrack.uri);
-      const subtitleText = await subtitleResponse.text();
-      setSubtitles(subtitleText);
+        try {
+            const playlistResponse = await fetch(selectedTrack.uri);
+            const playlistText = await playlistResponse.text();
+            console.log('Fetched playlist text:', playlistText); // Debugging line
+
+            // Parse the HLS playlist file to extract WebVTT URLs
+            const vttUrls = extractVTTUrlsFromPlaylist(playlistText);
+            console.log('Extracted VTT URLs:', vttUrls); // Debugging line
+
+            if (vttUrls.length === 0) {
+                throw new Error('No VTT URLs found in the playlist');
+            }
+
+            // Fetch and parse each WebVTT file
+            const vttPromises = vttUrls.map(async (url) => {
+                const vttResponse = await fetch(url);
+                const vttText = await vttResponse.text();
+                return parseWebVTT(vttText);
+            });
+
+            const vttResults = await Promise.all(vttPromises);
+            const combinedSubtitles = vttResults.flat();
+            console.log('Combined subtitles:', combinedSubtitles); // Debugging line
+            setSubtitleText(combinedSubtitles);
+        } catch (error) {
+            console.error('Error fetching subtitles:', error);
+        }
     }
   };
+
+  const parseWebVTT = (text) => {
+    const parser = new WebVTTParser();
+    const tree = parser.parse(text);
+    return tree.cues.map(cue => ({
+        startTime: cue.startTime,
+        endTime: cue.endTime,
+        text: cue.text,
+    }));
+  };
+  const extractVTTUrlsFromPlaylist = (playlistText) => {
+    const vttUrls = [];
+    const lines = playlistText.split('\n');
+    
+    // Regex to match URLs after #EXTINF lines
+    const vttPattern = /^(https?:\/\/.*\.vtt)$/;
+
+    let currentLineIsVTT = false;
+
+    lines.forEach(line => {
+        if (line.startsWith('#EXTINF')) {
+            currentLineIsVTT = true; // Next line should contain URL
+        } else if (currentLineIsVTT && vttPattern.test(line)) {
+            vttUrls.push(line);
+            currentLineIsVTT = false; // Reset flag
+        }
+    });
+
+    return vttUrls;
+  };
+
+  const renderSubtitles = () => {
+    if (!subtitleText || subtitleText.length === 0) return null;
+
+    // Find the current subtitle based on the current time
+    const currentSubtitle = subtitleText.find(subtitle =>
+      currentTime >= subtitle.startTime && currentTime <= subtitle.endTime
+    );
+
+    // Debugging logs
+    console.log('Current Time:', currentTime);
+    console.log('Checking Subtitle:', subtitleText);
+    console.log('Found Subtitle:', currentSubtitle);
+
+    // Ensure subtitle text is valid
+    if (currentSubtitle && typeof currentSubtitle.text === 'string') {
+        return (
+            <Text style={styles.subtitleText}>
+                {currentSubtitle.text}
+            </Text>
+        );
+    } else {
+        console.log('No valid subtitle found or subtitle text is not a string');
+        return null;
+    }
+  };
+
 
   const handleTrackVolumeChange = (trackName, value) => {
     setTrackVolumes(prevVolumes => ({...prevVolumes, [trackName]: value}));
@@ -547,6 +652,7 @@ const VideoPlayer = () => {
     }
   };  
 
+
   return (
     <SafeAreaView style={styles.container}>
       <Video
@@ -566,11 +672,20 @@ const VideoPlayer = () => {
         // onBuffer={() => {
         //   showFeedback('Buffering...');
         // }}
+        textTracks={
+          subtitleTracks.map(track => ({
+            title: track.name,
+            language: track.language || 'en', // Use track.language if available, fallback to 'en'
+            type: TextTrackType.VTT, // Use TextTrackType.VTT for the format
+            uri: track.uri
+          }))
+        }
         onError={error => {
           showFeedback('Error loading video');
           console.error(error);
         }}
       />
+      {renderSubtitles()}
       <Slider
         style={styles.slider}
         value={currentTime}
@@ -724,26 +839,32 @@ const VideoPlayer = () => {
             color="#FFF"
           />
         </TouchableOpacity>
-        <TouchableOpacity onPress={toggleSubtitleOptions}>
-          <Ionicons name="film" size={24} color="#FFF" />
-        </TouchableOpacity>
+        <View style={styles.subtitleContainer}>
+          <TouchableOpacity onPress={toggleSubtitleOptions}>
+            <MaterialIcons name="subtitles" size={24} color="#FFF" />
+          </TouchableOpacity>
+          {showSubtitleOptions && (
+            <View style={styles.subtitleOptionsContainer}>
+              {Object.keys(subtitleTracks).map((key) => (
+                <TouchableOpacity
+                  key={key}
+                  style={styles.subtitleOption}
+                  onPress={() => handleSubtitleChange(key)}
+                >
+                  <Text style={styles.subtitleText}>{subtitleTracks[key].name}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+          {/* Render subtitle text */}
+          {subtitleText && (
+            <View style={styles.subtitleTextContainer}>
+              <Text style={styles.subtitleDisplayText}>{subtitleText}</Text>
+            </View>
+          )}
+        </View>
       </View>
       <Text style={styles.subtitle}>{subtitles}</Text>
-      <Modal
-        isVisible={showSubtitleOptions}
-        onBackdropPress={() => setShowSubtitleOptions(false)}>
-        <View style={styles.modalContent}>
-          <TouchableOpacity onPress={() => handleSubtitleChange('Lyrics')}>
-            <Text style={styles.modalOption}>Lyrics</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleSubtitleChange('Meaning')}>
-            <Text style={styles.modalOption}>Meaning</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleSubtitleChange('Notation')}>
-            <Text style={styles.modalOption}>Notation</Text>
-          </TouchableOpacity>
-        </View>
-      </Modal>
       <Animated.View style={[styles.feedback, {opacity: feedbackOpacity}]}>
         <Text style={styles.feedbackText}>{feedbackMessage}</Text>
       </Animated.View>
