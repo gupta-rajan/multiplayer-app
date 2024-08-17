@@ -85,6 +85,7 @@ const VideoPlayer = () => {
   const [showSubtitleOptions, setShowSubtitleOptions] = useState(false);
   const [subtitleTracks, setSubtitleTracks] = useState([]);
   const [subtitleText, setSubtitleText] = useState('');
+  const [subtitleCues, setSubtitleCues] = useState([]); // Add this state
 
   const currentTimeRef = useRef<number>(0);
 
@@ -514,49 +515,67 @@ const VideoPlayer = () => {
     setSelectedSubtitle(type);
     setShowSubtitleOptions(false);
     showFeedback(`Subtitles: ${subtitleTracks[type].name}`);
-
+  
     const selectedTrack = subtitleTracks[type];
-
+  
     if (selectedTrack) {
-        try {
-            const playlistResponse = await fetch(selectedTrack.uri);
-            const playlistText = await playlistResponse.text();
-            console.log('Fetched playlist text:', playlistText); // Debugging line
-
-            // Parse the HLS playlist file to extract WebVTT URLs
-            const vttUrls = extractVTTUrlsFromPlaylist(playlistText);
-            console.log('Extracted VTT URLs:', vttUrls); // Debugging line
-
-            if (vttUrls.length === 0) {
-                throw new Error('No VTT URLs found in the playlist');
-            }
-
-            // Fetch and parse each WebVTT file
-            const vttPromises = vttUrls.map(async (url) => {
-                const vttResponse = await fetch(url);
-                const vttText = await vttResponse.text();
-                return parseWebVTT(vttText);
-            });
-
-            const vttResults = await Promise.all(vttPromises);
-            const combinedSubtitles = vttResults.flat();
-            console.log('Combined subtitles:', combinedSubtitles); // Debugging line
-            setSubtitleText(combinedSubtitles);
-        } catch (error) {
-            console.error('Error fetching subtitles:', error);
+      try {
+        const playlistResponse = await fetch(selectedTrack.uri);
+        const playlistText = await playlistResponse.text();
+  
+        // Parse the HLS playlist file to extract WebVTT URLs
+        const vttUrls = extractVTTUrlsFromPlaylist(playlistText);
+  
+        if (vttUrls.length === 0) {
+          throw new Error('No VTT URLs found in the playlist');
         }
+  
+        // Fetch and parse each WebVTT file
+        const vttPromises = vttUrls.map(async (vttUrl) => {
+          const vttResponse = await fetch(vttUrl);
+          const vttText = await vttResponse.text();
+  
+          const parser = new WebVTTParser();
+          const vttData = parser.parse(vttText);
+  
+          // Check if `cues` is an array or object and handle accordingly
+          let cuesArray = [];
+          if (Array.isArray(vttData.cues)) {
+            cuesArray = vttData.cues;
+          } else if (typeof vttData.cues === 'object') {
+            // If `cues` is an object, extract its values into an array
+            cuesArray = Object.values(vttData.cues);
+          }
+  
+          return cuesArray.map(cue => ({
+            startTime: cue.startTime,
+            endTime: cue.endTime,
+            text: cue.text,
+          }));
+        });
+  
+        // Await all promises and flatten the resulting arrays
+        const subtitleCues = (await Promise.all(vttPromises)).flat();
+        setSubtitleCues(subtitleCues); // Set the subtitle cues
+  
+        // Convert cues to a single string if needed for another use
+        const subtitleText = subtitleCues.map(cue => cue.text).join('\n');
+        setSubtitleText(subtitleText);
+      } catch (error) {
+        console.error('Error fetching subtitles:', error);
+      }
     }
   };
 
-  const parseWebVTT = (text) => {
-    const parser = new WebVTTParser();
-    const tree = parser.parse(text);
-    return tree.cues.map(cue => ({
-        startTime: cue.startTime,
-        endTime: cue.endTime,
-        text: cue.text,
-    }));
-  };
+  // const parseWebVTT = (text) => {
+  //   const parser = new WebVTTParser();
+  //   const tree = parser.parse(text);
+  //   return tree.cues.map(cue => ({
+  //       startTime: cue.startTime,
+  //       endTime: cue.endTime,
+  //       text: cue.text,
+  //   }));
+  // };
   const extractVTTUrlsFromPlaylist = (playlistText) => {
     const vttUrls = [];
     const lines = playlistText.split('\n');
@@ -576,34 +595,39 @@ const VideoPlayer = () => {
     });
 
     return vttUrls;
-  };
+    };
 
-  const renderSubtitles = () => {
-    if (!subtitleText || subtitleText.length === 0) return null;
+    const renderSubtitles = () => {
+    // console.log('Type of subtitleCues:', typeof subtitleCues);
+    // console.log('Subtitle Cues:', subtitleCues);
+
+    // Check if subtitleCues is an array and not empty
+    if (!Array.isArray(subtitleCues) || subtitleCues.length === 0) return null;
+
+    // Debugging logs
+    // console.log('Current Time:', currentTime);
 
     // Find the current subtitle based on the current time
-    const currentSubtitle = subtitleText.find(subtitle =>
+    const currentSubtitle = subtitleCues.find(subtitle =>
       currentTime >= subtitle.startTime && currentTime <= subtitle.endTime
     );
 
-    // Debugging logs
-    console.log('Current Time:', currentTime);
-    console.log('Checking Subtitle:', subtitleText);
-    console.log('Found Subtitle:', currentSubtitle);
+    // Debugging log to see the found subtitle
+    // console.log('Found Subtitle:', currentSubtitle);
 
     // Ensure subtitle text is valid
     if (currentSubtitle && typeof currentSubtitle.text === 'string') {
-        return (
-            <Text style={styles.subtitleText}>
-                {currentSubtitle.text}
-            </Text>
-        );
+      return (
+        <Text style={styles.subtitleText}>
+          {currentSubtitle.text}
+        </Text>
+      );
     } else {
-        console.log('No valid subtitle found or subtitle text is not a string');
-        return null;
+      console.log('No valid subtitle found or subtitle text is not a string');
+      return null;
     }
   };
-
+  
 
   const handleTrackVolumeChange = (trackName, value) => {
     setTrackVolumes(prevVolumes => ({...prevVolumes, [trackName]: value}));
@@ -857,11 +881,11 @@ const VideoPlayer = () => {
             </View>
           )}
           {/* Render subtitle text */}
-          {subtitleText && (
+          {/* {subtitleText && (
             <View style={styles.subtitleTextContainer}>
               <Text style={styles.subtitleDisplayText}>{subtitleText}</Text>
             </View>
-          )}
+          )} */}
         </View>
       </View>
       <Text style={styles.subtitle}>{subtitles}</Text>
