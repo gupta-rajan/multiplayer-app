@@ -24,6 +24,8 @@ import styles from '../styles/videoPlayerStyles'; // Adjust the path as needed
 import VolumeControl from '../components/VolumeControl';
 import MusicControl from '../components/MusicControl';
 import PlaybackControl from '../components/PlaybackControl';
+import QualityControl from '../components/QualityControl';
+import SubtitleControl from '../components/SubtitleControl';
 
 const formatTime = time => {
   const minutes = Math.floor(time / 60);
@@ -748,31 +750,12 @@ const VideoPlayer = () => {
           playbackOpacity={playbackOpacity}
           handlePlaybackRateChange={handlePlaybackRateChange}
         />
-        <View style={styles.qualityControlContainer}>
-          <TouchableOpacity onPress={toggleQualityOptions}>
-            <Ionicons name="settings" size={24} color="#FFF" />
-          </TouchableOpacity>
-          {showQualityOptions && (
-            <Animated.View
-              style={[
-                styles.qualityOptionsContainer,
-                {
-                  transform: [{scaleY: qualityAnimation}],
-                  opacity: qualityAnimation,
-                },
-              ]}>
-              <TouchableOpacity onPress={() => handleQualityChange('1080p')}>
-                <Text style={styles.qualityOption}>1080p</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => handleQualityChange('720p')}>
-                <Text style={styles.qualityOption}>720p</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => handleQualityChange('480p')}>
-                <Text style={styles.qualityOption}>480p</Text>
-              </TouchableOpacity>
-            </Animated.View>
-          )}
-        </View>
+        <QualityControl
+          showQualityOptions={showQualityOptions}
+          toggleQualityOptions={toggleQualityOptions}
+          qualityAnimation={qualityAnimation}
+          handleQualityChange={handleQualityChange}
+        />
         <TouchableOpacity onPress={toggleFullScreen}>
           <Ionicons
             name={isFullScreen ? 'contract' : 'expand'}
@@ -780,31 +763,12 @@ const VideoPlayer = () => {
             color="#FFF"
           />
         </TouchableOpacity>
-        <View style={styles.subtitleContainer}>
-          <TouchableOpacity onPress={toggleSubtitleOptions}>
-            <MaterialIcons name="subtitles" size={24} color="#FFF" />
-          </TouchableOpacity>
-          {showSubtitleOptions && (
-            <View style={styles.subtitleOptionsContainer}>
-              {Object.keys(subtitleTracks).map(key => (
-                <TouchableOpacity
-                  key={key}
-                  style={styles.subtitleOption}
-                  onPress={() => handleSubtitleChange(key)}>
-                  <Text style={styles.subtitleText}>
-                    {subtitleTracks[key].name}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
-          {/* Render subtitle text */}
-          {/* {subtitleText && (
-            <View style={styles.subtitleTextContainer}>
-              <Text style={styles.subtitleDisplayText}>{subtitleText}</Text>
-            </View>
-          )} */}
-        </View>
+        <SubtitleControl
+          showSubtitleOptions={showSubtitleOptions}
+          toggleSubtitleOptions={toggleSubtitleOptions}
+          subtitleTracks={subtitleTracks}
+          handleSubtitleChange={handleSubtitleChange}
+        />
       </View>
       <Text style={styles.subtitleText}>{subtitles}</Text>
       <Animated.View style={{opacity: feedbackOpacity}}>
