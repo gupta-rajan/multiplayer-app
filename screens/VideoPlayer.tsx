@@ -11,8 +11,6 @@ import {
 import Video, {TextTrackType} from 'react-native-video';
 import Slider from '@react-native-community/slider';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 import Orientation from 'react-native-orientation-locker';
 import NetInfo from '@react-native-community/netinfo';
@@ -50,13 +48,7 @@ const VideoPlayer = () => {
   const [volume, setVolume] = useState(1.0);
 
   //Music Tracks
-  const [showMusicTracks, setShowMusicTracks] = useState(false);
   const [trackVolumes, setTrackVolumes] = useState({});
-  const trackAnimation = useRef(new Animated.Value(0)).current; // For scaling effect
-  const trackScale = trackAnimation.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, 1],
-  });
   const [audioTracks, setAudioTracks] = useState([]);
   const [audioElements, setAudioElements] = useState([]);
 
@@ -214,15 +206,6 @@ const VideoPlayer = () => {
       });
     };
   }, [audioElements]);
-
-  //Music tracks animation
-  useEffect(() => {
-    Animated.timing(trackAnimation, {
-      toValue: showMusicTracks ? 1 : 0,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
-  }, [showMusicTracks]);
 
   useEffect(() => {
     const handleNetworkChange = state => {
@@ -627,28 +610,6 @@ const VideoPlayer = () => {
     if (track) track.sound.setVolume(value);
   };
 
-  const handleMusicIconPress = () => {
-    setShowMusicTracks(!showMusicTracks);
-  };
-
-  //Music tracks
-  const toggleMusicTracks = () => {
-    if (showMusicTracks) {
-      Animated.timing(trackAnimation, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }).start(() => setShowMusicTracks(false));
-    } else {
-      setShowMusicTracks(true);
-      Animated.timing(trackAnimation, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    }
-  };
-
   return (
     <SafeAreaView style={styles.container}>
       <Video
@@ -703,13 +664,9 @@ const VideoPlayer = () => {
 
         <VolumeControl volume={volume} onVolumeChange={handleVolumeChange} />
         <MusicControl
-          showMusicTracks={showMusicTracks}
-          toggleMusicTracks={toggleMusicTracks}
           audioTracks={audioTracks}
           trackVolumes={trackVolumes}
-          trackScale={trackScale}
-          trackAnimation={trackAnimation}
-          handleTrackVolumeChange={handleTrackVolumeChange}
+          onTrackVolumeChange={handleTrackVolumeChange}
         />
 
         <PlaybackControl

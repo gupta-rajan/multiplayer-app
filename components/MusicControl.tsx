@@ -1,19 +1,49 @@
 // MusicControl.js
-import React from 'react';
+import React , {useState, useRef, useEffect} from 'react';
 import {View, TouchableOpacity, Animated, Text} from 'react-native';
 import Slider from '@react-native-community/slider';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import styles from '../styles/videoPlayerStyles';
 
-const MusicControl = ({
-  showMusicTracks,
-  toggleMusicTracks,
-  audioTracks,
-  trackVolumes,
-  trackScale,
-  trackAnimation,
-  handleTrackVolumeChange,
-}) => {
+const MusicControl = ({audioTracks, trackVolumes, onTrackVolumeChange}) => {
+  const [showMusicTracks, setShowMusicTracks] = useState(false);
+  const trackAnimation = useRef(new Animated.Value(0)).current; // For scaling effect
+  const trackScale = trackAnimation.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 1],
+  });
+
+  //Music tracks animation
+  useEffect(() => {
+    Animated.timing(trackAnimation, {
+      toValue: showMusicTracks ? 1 : 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  }, [showMusicTracks]);
+
+  //Music tracks
+  const toggleMusicTracks = () => {
+    if (showMusicTracks) {
+      Animated.timing(trackAnimation, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start(() => setShowMusicTracks(false));
+    } else {
+      setShowMusicTracks(true);
+      Animated.timing(trackAnimation, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    }
+  };
+
+  const handleTrackVolumeChange = (trackName, value) => {
+    onTrackVolumeChange(trackName, value);
+  };
+
   return (
     <View style={styles.musicControlContainer}>
       <TouchableOpacity
