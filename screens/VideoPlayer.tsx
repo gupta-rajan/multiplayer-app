@@ -69,7 +69,6 @@ const VideoPlayer = () => {
   //Subtitle options
   const [subtitles, setSubtitles] = useState('');
   const [selectedSubtitle, setSelectedSubtitle] = useState('notations');
-  const [showSubtitleOptions, setShowSubtitleOptions] = useState(false);
   const [subtitleTracks, setSubtitleTracks] = useState([]);
   const [subtitleText, setSubtitleText] = useState('');
   const [subtitleCues, setSubtitleCues] = useState([]); // Add this state
@@ -413,48 +412,9 @@ const VideoPlayer = () => {
     }
   };
 
-  //Volume Slider toggle
-  const toggleVolumeSlider = () => {
-    if (showVolumeSlider) {
-      // Close the slider
-      Animated.parallel([
-        Animated.timing(volumeScale, {
-          toValue: 0,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.timing(volumeOpacity, {
-          toValue: 0,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-      ]).start(() => setShowVolumeSlider(false));
-    } else {
-      // Open the slider
-      setShowVolumeSlider(true);
-      Animated.parallel([
-        Animated.timing(volumeScale, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.timing(volumeOpacity, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }
-  };
-
-  const toggleSubtitleOptions = () => {
-    setShowSubtitleOptions(!showSubtitleOptions);
-  };
-
   //subtitle options
   const handleSubtitleChange = async type => {
     setSelectedSubtitle(type);
-    setShowSubtitleOptions(false);
     showFeedback(`Subtitles: ${subtitleTracks[type].name}`);
 
     const selectedTrack = subtitleTracks[type];
@@ -508,15 +468,6 @@ const VideoPlayer = () => {
     }
   };
 
-  // const parseWebVTT = (text) => {
-  //   const parser = new WebVTTParser();
-  //   const tree = parser.parse(text);
-  //   return tree.cues.map(cue => ({
-  //       startTime: cue.startTime,
-  //       endTime: cue.endTime,
-  //       text: cue.text,
-  //   }));
-  // };
   const extractVTTUrlsFromPlaylist = playlistText => {
     const vttUrls = [];
     const lines = playlistText.split('\n');
@@ -539,23 +490,14 @@ const VideoPlayer = () => {
   };
 
   const renderSubtitles = () => {
-    // console.log('Type of subtitleCues:', typeof subtitleCues);
-    // console.log('Subtitle Cues:', subtitleCues);
-
     // Check if subtitleCues is an array and not empty
     if (!Array.isArray(subtitleCues) || subtitleCues.length === 0) return null;
-
-    // Debugging logs
-    // console.log('Current Time:', currentTime);
 
     // Find the current subtitle based on the current time
     const currentSubtitle = subtitleCues.find(
       subtitle =>
         currentTime >= subtitle.startTime && currentTime <= subtitle.endTime,
     );
-
-    // Debugging log to see the found subtitle
-    // console.log('Found Subtitle:', currentSubtitle);
 
     // Ensure subtitle text is valid
     if (currentSubtitle && typeof currentSubtitle.text === 'string') {
@@ -589,9 +531,6 @@ const VideoPlayer = () => {
         onProgress={handleProgress}
         onLoad={handleLoad}
         onEnd={handleEnd}
-        // onBuffer={() => {
-        //   showFeedback('Buffering...');
-        // }}
         textTracks={subtitleTracks.map(track => ({
           title: track.name,
           language: track.language || 'en', // Use track.language if available, fallback to 'en'
@@ -645,10 +584,8 @@ const VideoPlayer = () => {
           />
         </TouchableOpacity>
         <SubtitleControl
-          showSubtitleOptions={showSubtitleOptions}
-          toggleSubtitleOptions={toggleSubtitleOptions}
+          onSubtitleChange={handleSubtitleChange}
           subtitleTracks={subtitleTracks}
-          handleSubtitleChange={handleSubtitleChange}
         />
       </View>
       <Text style={styles.subtitleText}>{subtitles}</Text>

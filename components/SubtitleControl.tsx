@@ -1,15 +1,21 @@
-// SubtitleControl.js
-import React from 'react';
+import React, {useState} from 'react';
 import {View, TouchableOpacity, Text} from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import styles from '../styles/videoPlayerStyles';
 
-const SubtitleControl = ({
-  showSubtitleOptions,
-  toggleSubtitleOptions,
-  subtitleTracks,
-  handleSubtitleChange,
-}) => {
+const SubtitleControl = ({ onSubtitleChange, subtitleTracks}) => {
+
+  const [showSubtitleOptions, setShowSubtitleOptions] = useState(false);
+
+  const toggleSubtitleOptions = () => {
+    setShowSubtitleOptions(!showSubtitleOptions);
+  };
+
+  const handleSubtitleChange = key => {
+    setShowSubtitleOptions(false);
+    onSubtitleChange(key);
+  };
+
   return (
     <View style={styles.subtitleContainer}>
       <TouchableOpacity onPress={toggleSubtitleOptions}>
