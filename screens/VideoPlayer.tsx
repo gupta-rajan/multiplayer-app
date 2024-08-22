@@ -48,9 +48,6 @@ const VideoPlayer = () => {
 
   //Volume
   const [volume, setVolume] = useState(1.0);
-  const volumeScale = useRef(new Animated.Value(0)).current;
-  const volumeOpacity = useRef(new Animated.Value(0)).current;
-  const [showVolumeSlider, setShowVolumeSlider] = useState(false);
 
   //Music Tracks
   const [showMusicTracks, setShowMusicTracks] = useState(false);
@@ -703,15 +700,8 @@ const VideoPlayer = () => {
         <TouchableOpacity onPress={skipForward}>
           <Ionicons name="play-forward" size={24} color="#FFF" />
         </TouchableOpacity>
-        <VolumeControl
-          showVolumeSlider={showVolumeSlider}
-          toggleVolumeSlider={toggleVolumeSlider}
-          volume={volume}
-          volumeScale={volumeScale}
-          volumeOpacity={volumeOpacity}
-          handleVolumeChange={handleVolumeChange}
-        />
 
+        <VolumeControl volume={volume} onVolumeChange={handleVolumeChange} />
         <MusicControl
           showMusicTracks={showMusicTracks}
           toggleMusicTracks={toggleMusicTracks}
