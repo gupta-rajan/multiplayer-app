@@ -54,10 +54,6 @@ const VideoPlayer = () => {
 
   //Playback speeds
   const [playbackRate, setPlaybackRate] = useState(1.0);
-  const [showPlaybackOptions, setShowPlaybackOptions] = useState(false);
-  // const playbackAnimation = useRef(new Animated.Value(0)).current;
-  const playbackScale = useRef(new Animated.Value(0)).current;
-  const playbackOpacity = useRef(new Animated.Value(0)).current;
 
   //quality changes
   const [selectedQuality, setSelectedQuality] = useState('auto');
@@ -337,7 +333,6 @@ const VideoPlayer = () => {
     if (!isPaused) {
       setPlaybackRate(rate);
       showFeedback(`Speed: ${rate}x`);
-      setShowPlaybackOptions(false);
 
       if (audioElements.length) {
         audioElements.forEach(({sound}) => sound.setSpeed(rate));
@@ -444,38 +439,6 @@ const VideoPlayer = () => {
           useNativeDriver: true,
         }),
         Animated.timing(volumeOpacity, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }
-  };
-
-  //Playback speed toggle handler
-  const togglePlaybackOptions = () => {
-    if (showPlaybackOptions) {
-      Animated.parallel([
-        Animated.timing(playbackScale, {
-          toValue: 0,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.timing(playbackOpacity, {
-          toValue: 0,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-      ]).start(() => setShowPlaybackOptions(false));
-    } else {
-      setShowPlaybackOptions(true);
-      Animated.parallel([
-        Animated.timing(playbackScale, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.timing(playbackOpacity, {
           toValue: 1,
           duration: 300,
           useNativeDriver: true,
@@ -670,11 +633,8 @@ const VideoPlayer = () => {
         />
 
         <PlaybackControl
-          showPlaybackOptions={showPlaybackOptions}
-          togglePlaybackOptions={togglePlaybackOptions}
-          playbackScale={playbackScale}
-          playbackOpacity={playbackOpacity}
-          handlePlaybackRateChange={handlePlaybackRateChange}
+          isPaused={isPaused}
+          onPlaybackRateChange={handlePlaybackRateChange}
         />
         <QualityControl onQualityChange={handleQualityChange} />
         <TouchableOpacity onPress={toggleFullScreen}>
