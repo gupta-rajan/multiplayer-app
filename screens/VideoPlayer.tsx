@@ -15,7 +15,6 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 import Orientation from 'react-native-orientation-locker';
-import Modal from 'react-native-modal';
 import NetInfo from '@react-native-community/netinfo';
 import {Parser} from 'm3u8-parser';
 import { WebVTTParser } from 'webvtt-parser';
@@ -888,8 +887,8 @@ const VideoPlayer = () => {
           )} */}
         </View>
       </View>
-      <Text style={styles.subtitle}>{subtitles}</Text>
-      <Animated.View style={[styles.feedback, {opacity: feedbackOpacity}]}>
+      <Text style={styles.subtitleText}>{subtitles}</Text>
+      <Animated.View style={{opacity: feedbackOpacity}}>
         <Text style={styles.feedbackText}>{feedbackMessage}</Text>
       </Animated.View>
     </SafeAreaView>
