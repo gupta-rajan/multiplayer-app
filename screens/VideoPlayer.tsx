@@ -8,7 +8,7 @@ import {
   Animated,
   Alert,
 } from 'react-native';
-import Video , { TextTrackType } from 'react-native-video';
+import Video, {TextTrackType} from 'react-native-video';
 import Slider from '@react-native-community/slider';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -17,9 +17,12 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Orientation from 'react-native-orientation-locker';
 import NetInfo from '@react-native-community/netinfo';
 import {Parser} from 'm3u8-parser';
-import { WebVTTParser } from 'webvtt-parser';
+import {WebVTTParser} from 'webvtt-parser';
 import Sound from 'react-native-sound';
 import styles from '../styles/videoPlayerStyles'; // Adjust the path as needed
+
+import VolumeControl from '../components/VolumeControl';
+import MusicControl from '../components/MusicControl';
 
 const formatTime = time => {
   const minutes = Math.floor(time / 60);
@@ -77,7 +80,6 @@ const VideoPlayer = () => {
   });
   const [videoUrl, setVideoUrl] = useState('');
 
-
   //Subtitle options
   const [subtitles, setSubtitles] = useState('');
   const [selectedSubtitle, setSelectedSubtitle] = useState('notations');
@@ -87,7 +89,6 @@ const VideoPlayer = () => {
   const [subtitleCues, setSubtitleCues] = useState([]); // Add this state
 
   const currentTimeRef = useRef<number>(0);
-
 
   useEffect(() => {
     const fetchData = async () => {
@@ -344,15 +345,15 @@ const VideoPlayer = () => {
   };
 
   // Playback rate change handler
-  const handlePlaybackRateChange = (rate) => {
+  const handlePlaybackRateChange = rate => {
     // Only change the playback rate if the video is not paused
     if (!isPaused) {
       setPlaybackRate(rate);
       showFeedback(`Speed: ${rate}x`);
       setShowPlaybackOptions(false);
-      
+
       if (audioElements.length) {
-        audioElements.forEach(({ sound }) => sound.setSpeed(rate));
+        audioElements.forEach(({sound}) => sound.setSpeed(rate));
       }
     } else {
       showFeedback('Cannot change speed while paused');
@@ -437,7 +438,6 @@ const VideoPlayer = () => {
     }
   };
 
-
   //Volume Slider toggle
   const toggleVolumeSlider = () => {
     if (showVolumeSlider) {
@@ -508,35 +508,34 @@ const VideoPlayer = () => {
     setShowSubtitleOptions(!showSubtitleOptions);
   };
 
-
   //subtitle options
-  const handleSubtitleChange = async (type) => {
+  const handleSubtitleChange = async type => {
     setSelectedSubtitle(type);
     setShowSubtitleOptions(false);
     showFeedback(`Subtitles: ${subtitleTracks[type].name}`);
-  
+
     const selectedTrack = subtitleTracks[type];
-  
+
     if (selectedTrack) {
       try {
         const playlistResponse = await fetch(selectedTrack.uri);
         const playlistText = await playlistResponse.text();
-  
+
         // Parse the HLS playlist file to extract WebVTT URLs
         const vttUrls = extractVTTUrlsFromPlaylist(playlistText);
-  
+
         if (vttUrls.length === 0) {
           throw new Error('No VTT URLs found in the playlist');
         }
-  
+
         // Fetch and parse each WebVTT file
-        const vttPromises = vttUrls.map(async (vttUrl) => {
+        const vttPromises = vttUrls.map(async vttUrl => {
           const vttResponse = await fetch(vttUrl);
           const vttText = await vttResponse.text();
-  
+
           const parser = new WebVTTParser();
           const vttData = parser.parse(vttText);
-  
+
           // Check if `cues` is an array or object and handle accordingly
           let cuesArray = [];
           if (Array.isArray(vttData.cues)) {
@@ -545,18 +544,18 @@ const VideoPlayer = () => {
             // If `cues` is an object, extract its values into an array
             cuesArray = Object.values(vttData.cues);
           }
-  
+
           return cuesArray.map(cue => ({
             startTime: cue.startTime,
             endTime: cue.endTime,
             text: cue.text,
           }));
         });
-  
+
         // Await all promises and flatten the resulting arrays
         const subtitleCues = (await Promise.all(vttPromises)).flat();
         setSubtitleCues(subtitleCues); // Set the subtitle cues
-  
+
         // Convert cues to a single string if needed for another use
         const subtitleText = subtitleCues.map(cue => cue.text).join('\n');
         setSubtitleText(subtitleText);
@@ -575,28 +574,28 @@ const VideoPlayer = () => {
   //       text: cue.text,
   //   }));
   // };
-  const extractVTTUrlsFromPlaylist = (playlistText) => {
+  const extractVTTUrlsFromPlaylist = playlistText => {
     const vttUrls = [];
     const lines = playlistText.split('\n');
-    
+
     // Regex to match URLs after #EXTINF lines
     const vttPattern = /^(https?:\/\/.*\.vtt)$/;
 
     let currentLineIsVTT = false;
 
     lines.forEach(line => {
-        if (line.startsWith('#EXTINF')) {
-            currentLineIsVTT = true; // Next line should contain URL
-        } else if (currentLineIsVTT && vttPattern.test(line)) {
-            vttUrls.push(line);
-            currentLineIsVTT = false; // Reset flag
-        }
+      if (line.startsWith('#EXTINF')) {
+        currentLineIsVTT = true; // Next line should contain URL
+      } else if (currentLineIsVTT && vttPattern.test(line)) {
+        vttUrls.push(line);
+        currentLineIsVTT = false; // Reset flag
+      }
     });
 
     return vttUrls;
-    };
+  };
 
-    const renderSubtitles = () => {
+  const renderSubtitles = () => {
     // console.log('Type of subtitleCues:', typeof subtitleCues);
     // console.log('Subtitle Cues:', subtitleCues);
 
@@ -607,8 +606,9 @@ const VideoPlayer = () => {
     // console.log('Current Time:', currentTime);
 
     // Find the current subtitle based on the current time
-    const currentSubtitle = subtitleCues.find(subtitle =>
-      currentTime >= subtitle.startTime && currentTime <= subtitle.endTime
+    const currentSubtitle = subtitleCues.find(
+      subtitle =>
+        currentTime >= subtitle.startTime && currentTime <= subtitle.endTime,
     );
 
     // Debugging log to see the found subtitle
@@ -616,17 +616,12 @@ const VideoPlayer = () => {
 
     // Ensure subtitle text is valid
     if (currentSubtitle && typeof currentSubtitle.text === 'string') {
-      return (
-        <Text style={styles.subtitleText}>
-          {currentSubtitle.text}
-        </Text>
-      );
+      return <Text style={styles.subtitleText}>{currentSubtitle.text}</Text>;
     } else {
       console.log('No valid subtitle found or subtitle text is not a string');
       return null;
     }
   };
-  
 
   const handleTrackVolumeChange = (trackName, value) => {
     setTrackVolumes(prevVolumes => ({...prevVolumes, [trackName]: value}));
@@ -673,8 +668,7 @@ const VideoPlayer = () => {
         useNativeDriver: true,
       }).start();
     }
-  };  
-
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -695,14 +689,12 @@ const VideoPlayer = () => {
         // onBuffer={() => {
         //   showFeedback('Buffering...');
         // }}
-        textTracks={
-          subtitleTracks.map(track => ({
-            title: track.name,
-            language: track.language || 'en', // Use track.language if available, fallback to 'en'
-            type: TextTrackType.VTT, // Use TextTrackType.VTT for the format
-            uri: track.uri
-          }))
-        }
+        textTracks={subtitleTracks.map(track => ({
+          title: track.name,
+          language: track.language || 'en', // Use track.language if available, fallback to 'en'
+          type: TextTrackType.VTT, // Use TextTrackType.VTT for the format
+          uri: track.uri,
+        }))}
         onError={error => {
           showFeedback('Error loading video');
           console.error(error);
@@ -729,75 +721,24 @@ const VideoPlayer = () => {
         <TouchableOpacity onPress={skipForward}>
           <Ionicons name="play-forward" size={24} color="#FFF" />
         </TouchableOpacity>
-        <View style={styles.volumeControlContainer}>
-          <TouchableOpacity
-            onPress={toggleVolumeSlider}
-            style={styles.volumeIconContainer}>
-            <Ionicons name="volume-medium" size={24} color="#FFF" />
-          </TouchableOpacity>
-          {showVolumeSlider && (
-            <Animated.View
-              style={[
-                styles.volumeContainer,
-                {
-                  transform: [{scaleY: volumeScale}],
-                  opacity: volumeOpacity,
-                },
-              ]}>
-              <Slider
-                style={styles.volumeSlider}
-                value={volume}
-                minimumValue={0}
-                maximumValue={1}
-                step={0.1}
-                minimumTrackTintColor="#1EB1FC"
-                maximumTrackTintColor="#1EB1FC"
-                thumbTintColor="#1EB1FC"
-                onValueChange={handleVolumeChange}
-              />
-            </Animated.View>
-          )}
-        </View>
+        <VolumeControl
+          showVolumeSlider={showVolumeSlider}
+          toggleVolumeSlider={toggleVolumeSlider}
+          volume={volume}
+          volumeScale={volumeScale}
+          volumeOpacity={volumeOpacity}
+          handleVolumeChange={handleVolumeChange}
+        />
 
-        <View style={styles.musicControlContainer}>
-          <TouchableOpacity
-            onPress={toggleMusicTracks}
-            style={styles.musicIconContainer}>
-            <MaterialIcons name="multitrack-audio" size={24} color="#FFF" />
-          </TouchableOpacity>
-          {showMusicTracks && (
-            <Animated.View
-              style={[
-                styles.trackContainer,
-                {
-                  transform: [{scaleY: trackScale}],
-                  opacity: trackAnimation,
-                },
-              ]}>
-              <View style={styles.trackRow}>
-
-                {audioTracks.map(track => (
-                  <View key={track.name} style={styles.trackColumn}>
-                    <Slider
-                      style={styles.trackSlider}
-                      minimumValue={0}
-                      maximumValue={1}
-                      step={0.1}
-                      minimumTrackTintColor="#1EB1FC"
-                      maximumTrackTintColor="#1EB1FC"
-                      value={trackVolumes[track.name] || 1}
-                      thumbTintColor="#1EB1FC"
-                      onValueChange={(value) =>
-                        handleTrackVolumeChange(track.name, value)
-                      }
-                    />
-                    <Text style={styles.trackName}>{track.name}</Text>
-                  </View>
-                ))}
-              </View>
-            </Animated.View>
-          )}
-        </View>
+        <MusicControl
+          showMusicTracks={showMusicTracks}
+          toggleMusicTracks={toggleMusicTracks}
+          audioTracks={audioTracks}
+          trackVolumes={trackVolumes}
+          trackScale={trackScale}
+          trackAnimation={trackAnimation}
+          handleTrackVolumeChange={handleTrackVolumeChange}
+        />
 
         <View style={styles.playbackControlContainer}>
           <TouchableOpacity
@@ -810,7 +751,7 @@ const VideoPlayer = () => {
               style={[
                 styles.playbackOptionsContainer,
                 {
-                  transform: [{ scaleY: playbackScale }],
+                  transform: [{scaleY: playbackScale}],
                   opacity: playbackOpacity,
                 },
               ]}>
@@ -838,11 +779,10 @@ const VideoPlayer = () => {
               style={[
                 styles.qualityOptionsContainer,
                 {
-                  transform: [{ scaleY: qualityAnimation }],
+                  transform: [{scaleY: qualityAnimation}],
                   opacity: qualityAnimation,
                 },
-              ]}
-            >
+              ]}>
               <TouchableOpacity onPress={() => handleQualityChange('1080p')}>
                 <Text style={styles.qualityOption}>1080p</Text>
               </TouchableOpacity>
@@ -868,13 +808,14 @@ const VideoPlayer = () => {
           </TouchableOpacity>
           {showSubtitleOptions && (
             <View style={styles.subtitleOptionsContainer}>
-              {Object.keys(subtitleTracks).map((key) => (
+              {Object.keys(subtitleTracks).map(key => (
                 <TouchableOpacity
                   key={key}
                   style={styles.subtitleOption}
-                  onPress={() => handleSubtitleChange(key)}
-                >
-                  <Text style={styles.subtitleText}>{subtitleTracks[key].name}</Text>
+                  onPress={() => handleSubtitleChange(key)}>
+                  <Text style={styles.subtitleText}>
+                    {subtitleTracks[key].name}
+                  </Text>
                 </TouchableOpacity>
               ))}
             </View>
