@@ -23,6 +23,7 @@ import styles from '../styles/videoPlayerStyles'; // Adjust the path as needed
 
 import VolumeControl from '../components/VolumeControl';
 import MusicControl from '../components/MusicControl';
+import PlaybackControl from '../components/PlaybackControl';
 
 const formatTime = time => {
   const minutes = Math.floor(time / 60);
@@ -740,36 +741,13 @@ const VideoPlayer = () => {
           handleTrackVolumeChange={handleTrackVolumeChange}
         />
 
-        <View style={styles.playbackControlContainer}>
-          <TouchableOpacity
-            onPress={togglePlaybackOptions}
-            style={styles.playbackIconContainer}>
-            <MaterialCommunityIcons name="play-speed" size={24} color="#FFF" />
-          </TouchableOpacity>
-          {showPlaybackOptions && (
-            <Animated.View
-              style={[
-                styles.playbackOptionsContainer,
-                {
-                  transform: [{scaleY: playbackScale}],
-                  opacity: playbackOpacity,
-                },
-              ]}>
-              <TouchableOpacity onPress={() => handlePlaybackRateChange(0.5)}>
-                <Text style={styles.playbackOption}>0.5x</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => handlePlaybackRateChange(1.0)}>
-                <Text style={styles.playbackOption}>1.0x</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => handlePlaybackRateChange(1.5)}>
-                <Text style={styles.playbackOption}>1.5x</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => handlePlaybackRateChange(2.0)}>
-                <Text style={styles.playbackOption}>2.0x</Text>
-              </TouchableOpacity>
-            </Animated.View>
-          )}
-        </View>
+        <PlaybackControl
+          showPlaybackOptions={showPlaybackOptions}
+          togglePlaybackOptions={togglePlaybackOptions}
+          playbackScale={playbackScale}
+          playbackOpacity={playbackOpacity}
+          handlePlaybackRateChange={handlePlaybackRateChange}
+        />
         <View style={styles.qualityControlContainer}>
           <TouchableOpacity onPress={toggleQualityOptions}>
             <Ionicons name="settings" size={24} color="#FFF" />
