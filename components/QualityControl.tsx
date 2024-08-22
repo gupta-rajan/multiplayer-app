@@ -1,15 +1,35 @@
-// QualityControl.js
-import React from 'react';
-import {View, TouchableOpacity, Animated, Text} from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, TouchableOpacity, Animated, Text } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import styles from '../styles/videoPlayerStyles';
 
-const QualityControl = ({
-  showQualityOptions,
-  toggleQualityOptions,
-  qualityAnimation,
-  handleQualityChange,
-}) => {
+const QualityControl = ({onQualityChange}) => {
+  const [showQualityOptions, setShowQualityOptions] = useState(false);
+  const qualityAnimation = useRef(new Animated.Value(0)).current;
+  //Quality options
+  const toggleQualityOptions = () => {
+    if (showQualityOptions) {
+      Animated.timing(qualityAnimation, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start(() => setShowQualityOptions(false));
+    } else {
+      setShowQualityOptions(true);
+      Animated.timing(qualityAnimation, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    }
+  };
+
+  const handleQualityChange = (quality) => {
+    setShowQualityOptions(false);
+    // Call the external handler passed via props
+    onQualityChange(quality);
+  };
+
   return (
     <View style={styles.qualityControlContainer}>
       <TouchableOpacity onPress={toggleQualityOptions}>

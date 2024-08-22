@@ -71,9 +71,7 @@ const VideoPlayer = () => {
   const playbackOpacity = useRef(new Animated.Value(0)).current;
 
   //quality changes
-  const [showQualityOptions, setShowQualityOptions] = useState(false);
   const [selectedQuality, setSelectedQuality] = useState('auto');
-  const qualityAnimation = useRef(new Animated.Value(0)).current;
 
   const [feedbackMessage, setFeedbackMessage] = useState('');
   const [videoUrls, setVideoUrls] = useState({
@@ -338,6 +336,12 @@ const VideoPlayer = () => {
     }
   };
 
+  const handleQualityChange = quality => {
+    setSelectedQuality(quality);
+    showFeedback(`Quality: ${quality}`);
+    setVideoUrl(videoUrls[quality] || videoUrls['auto']);
+  };
+
   const handleVolumeChange = value => {
     setVolume(value);
     showFeedback(`Volume: ${Math.round(value * 100)}%`);
@@ -403,13 +407,6 @@ const VideoPlayer = () => {
       audioElements.forEach(({sound}) => sound.setCurrentTime(value));
     }
     showFeedback(`Seeked to ${formatTime(value)}`);
-  };
-
-  const handleQualityChange = quality => {
-    setSelectedQuality(quality);
-    showFeedback(`Quality: ${quality}`);
-    setShowQualityOptions(false);
-    setVideoUrl(videoUrls[quality] || videoUrls['auto']);
   };
 
   const skipForward = () => {
@@ -655,24 +652,6 @@ const VideoPlayer = () => {
     }
   };
 
-  //Quality options
-  const toggleQualityOptions = () => {
-    if (showQualityOptions) {
-      Animated.timing(qualityAnimation, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }).start(() => setShowQualityOptions(false));
-    } else {
-      setShowQualityOptions(true);
-      Animated.timing(qualityAnimation, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    }
-  };
-
   return (
     <SafeAreaView style={styles.container}>
       <Video
@@ -750,12 +729,7 @@ const VideoPlayer = () => {
           playbackOpacity={playbackOpacity}
           handlePlaybackRateChange={handlePlaybackRateChange}
         />
-        <QualityControl
-          showQualityOptions={showQualityOptions}
-          toggleQualityOptions={toggleQualityOptions}
-          qualityAnimation={qualityAnimation}
-          handleQualityChange={handleQualityChange}
-        />
+        <QualityControl onQualityChange={handleQualityChange} />
         <TouchableOpacity onPress={toggleFullScreen}>
           <Ionicons
             name={isFullScreen ? 'contract' : 'expand'}
