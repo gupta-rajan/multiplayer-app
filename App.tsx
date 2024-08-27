@@ -5,7 +5,10 @@ import VideoPlayer from './screens/VideoPlayer';
 const App = () => {
   return (
     <SafeAreaView style={styles.container}>
-      <VideoPlayer />
+      <VideoPlayer 
+      apiUrl={'https://api.shaale.in/api/v1/content/rHo64ErZeuih5UUZgZGZ?type=song&itemId=c7b21fc8-df56-479f-be66-b2fe881a593a'}
+      song_id={'rHo64ErZeuih5UUZgZGZ'}
+      />
     </SafeAreaView>
   );
 };

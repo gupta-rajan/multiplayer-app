@@ -25,7 +25,64 @@ import PlaybackControl from '../components/PlaybackControl';
 import QualityControl from '../components/QualityControl';
 import SubtitleControl from '../components/SubtitleControl';
 
-const formatTime = time => {
+//types to avoid problems
+type VideoUrls = {
+  [key: string]: string;
+};
+
+type Cue = {
+  startTime: number;
+  endTime: number;
+  text: string;
+};
+
+type LoadData = {
+  duration: number;
+  currentTime: number;
+};
+
+type ProgressData = {
+  currentTime: number;
+};
+
+type TrackVolumes = {
+  [key: string]: number;
+};
+
+interface AudioTrack {
+  name: string;
+  uri: string;
+  // Add other properties as needed
+}
+
+interface SubtitleTrack {
+  name: string;
+  uri: string;
+  // Add other properties as needed
+}
+
+interface Playlist {
+  attributes: {
+    RESOLUTION: {
+      height: number;
+    };
+    uri: string;
+  };
+}
+
+interface SongContent {
+  song_id: string;
+  streamingUrl: string;
+  // Add other properties as needed
+}
+
+interface VideoPlayerProps {
+  apiUrl: string;
+  song_id: string;
+}
+
+
+const formatTime = (time: number) => {
   const minutes = Math.floor(time / 60);
   const seconds = Math.floor(time % 60);
   return `${minutes < 10 ? `0${minutes}` : minutes}:${
@@ -33,7 +90,7 @@ const formatTime = time => {
   }`;
 };
 
-const VideoPlayer = () => {
+const VideoPlayer: React.FC<VideoPlayerProps> = ({apiUrl,song_id}) => {
   const [baseUrl, setbaseUrl] = useState('');
   const playerRef = useRef(null);
   const feedbackOpacity = useRef(new Animated.Value(0)).current;
@@ -49,8 +106,8 @@ const VideoPlayer = () => {
 
   //Music Tracks
   const [trackVolumes, setTrackVolumes] = useState({});
-  const [audioTracks, setAudioTracks] = useState([]);
-  const [audioElements, setAudioElements] = useState([]);
+  const [audioTracks, setAudioTracks] = useState<AudioTrack[]>([]);
+  const [audioElements, setAudioElements] = useState<{ sound: Sound }[]>([]);
 
   //Playback speeds
   const [playbackRate, setPlaybackRate] = useState(1.0);
@@ -59,19 +116,20 @@ const VideoPlayer = () => {
   const [selectedQuality, setSelectedQuality] = useState('auto');
 
   const [feedbackMessage, setFeedbackMessage] = useState('');
-  const [videoUrls, setVideoUrls] = useState({
+  const [videoUrls, setVideoUrls] = useState<VideoUrls>({
     '1080p': '',
     '720p': '',
     '480p': '',
+    'auto': '',
   });
-  const [videoUrl, setVideoUrl] = useState('');
+  const [videoUrl, setVideoUrl] = useState<string>('');
 
   //Subtitle options
   const [subtitles, setSubtitles] = useState('');
   const [selectedSubtitle, setSelectedSubtitle] = useState('notations');
-  const [subtitleTracks, setSubtitleTracks] = useState([]);
+  const [subtitleTracks, setSubtitleTracks] = useState<SubtitleTrack[]>([]);
   const [subtitleText, setSubtitleText] = useState('');
-  const [subtitleCues, setSubtitleCues] = useState([]); // Add this state
+  const [subtitleCues, setSubtitleCues] = useState<Cue[]>([]); // Add this state
 
   const currentTimeRef = useRef<number>(0);
 
@@ -80,13 +138,13 @@ const VideoPlayer = () => {
       try {
         // Fetch content data
         const response = await fetch(
-          'https://api.shaale.in/api/v1/content/rHo64ErZeuih5UUZgZGZ?type=song&itemId=c7b21fc8-df56-479f-be66-b2fe881a593a',
+          apiUrl,
         );
         const data = await response.json();
 
         // Extract streaming URL
         const songContent = data.data.contents.find(
-          content => content.song_id === 'rHo64ErZeuih5UUZgZGZ',
+          (content: SongContent) => content.song_id === song_id,
         );
         if (!songContent) {
           throw new Error('Song content not found');
@@ -106,30 +164,36 @@ const VideoPlayer = () => {
         const baseUrl = streamingUrl.split('/').slice(0, -1).join('/');
         setbaseUrl(baseUrl);
         const qualityUrls = {
-          '1080p': playlists.find(p => p.attributes.RESOLUTION.height === 1080)
+          '1080p': playlists.find((p: Playlist) => p.attributes.RESOLUTION.height === 1080)
             ?.uri
             ? `${baseUrl}/${
-                playlists.find(p => p.attributes.RESOLUTION.height === 1080)
+                playlists.find((p: Playlist) => p.attributes.RESOLUTION.height === 1080)
                   ?.uri
               }`
             : '',
-          '720p': playlists.find(p => p.attributes.RESOLUTION.height === 720)
+          '720p': playlists.find((p: Playlist) => p.attributes.RESOLUTION.height === 720)
             ?.uri
             ? `${baseUrl}/${
-                playlists.find(p => p.attributes.RESOLUTION.height === 720)?.uri
+                playlists.find((p: Playlist) => p.attributes.RESOLUTION.height === 720)?.uri
               }`
             : '',
-          '480p': playlists.find(p => p.attributes.RESOLUTION.height === 480)
+          '480p': playlists.find((p: Playlist) => p.attributes.RESOLUTION.height === 480)
             ?.uri
             ? `${baseUrl}/${
-                playlists.find(p => p.attributes.RESOLUTION.height === 480)?.uri
+                playlists.find((p: Playlist) => p.attributes.RESOLUTION.height === 480)?.uri
+              }`
+            : '',
+          'auto': playlists.find((p: Playlist) => p.attributes.RESOLUTION.height === 480)
+            ?.uri
+            ? `${baseUrl}/${
+                playlists.find((p: Playlist) => p.attributes.RESOLUTION.height === 480)?.uri
               }`
             : '',
         };
 
         // Set subtitle tracks
         const subtitleTracks = manifest.mediaGroups.SUBTITLES?.subs || [];
-        const subtitleTracksArray = Object.keys(subtitleTracks).map(key => ({
+        const subtitleTracksArray: SubtitleTrack[] = Object.keys(subtitleTracks).map(key => ({
           ...subtitleTracks[key],
           name: key,
           uri: `${baseUrl}/${subtitleTracks[key].uri}`, // Add baseUrl to each track's URI
@@ -163,10 +227,11 @@ const VideoPlayer = () => {
         setAudioTracks(filteredAudioTracks);
 
         // Initialize audio elements and track volumes
-        const initialTrackVolumes = {};
+        const initialTrackVolumes: TrackVolumes = {};
         const initialAudioElements = filteredAudioTracks.map(track => {
           initialTrackVolumes[track.name] = 1;
-          const sound = new Sound(`${baseUrl}/${track.uri}`, null, error => {
+          const soundUrl = track.uri ? `${baseUrl}/${track.uri}` : '';
+          const sound = new Sound(soundUrl, undefined, error => {
             if (error) {
               console.log('Failed to load the sound', error);
             }
@@ -203,15 +268,11 @@ const VideoPlayer = () => {
   }, [audioElements]);
 
   useEffect(() => {
-    const handleNetworkChange = state => {
+    const handleNetworkChange = (state: { type: string })  => {
       const {type} = state;
-      if (type === 'wifi') {
-        setVideoUrl(videoUrls['1080p'] || videoUrls['auto']);
-      } else if (type === 'cellular') {
-        setVideoUrl(videoUrls['720p'] || videoUrls['auto']);
-      } else {
-        setVideoUrl(videoUrls['480p'] || videoUrls['auto']);
-      }
+      const defaultUrl = videoUrls['auto'];
+      const url = videoUrls[type] && videoUrls[type] !== '' ? videoUrls[type] : defaultUrl;
+      setVideoUrl(url);
     };
 
     const unsubscribe = NetInfo.addEventListener(handleNetworkChange);
@@ -224,13 +285,13 @@ const VideoPlayer = () => {
   useEffect(() => {
     // Handle play/pause synchronization
     if (audioElements.length) {
-      audioElements.forEach(({sound}) => {
+      audioElements.forEach(({ sound }: { sound: Sound }) => {
         if (isPaused) {
           sound.setCurrentTime(currentTime);
           sound.pause();
         } else {
           sound.setCurrentTime(currentTime);
-          sound.play(success => {
+          sound.play((success: boolean) => {
             if (!success) {
               console.log('Playback failed due to audio decoding errors');
             }
@@ -256,9 +317,9 @@ const VideoPlayer = () => {
 
   useEffect(() => {
     if (audioElements.length) {
-      audioElements.forEach(({sound}) => {
+      audioElements.forEach(({ sound }: { sound: Sound }) => {
         const syncThreshold = 1;
-        sound.getCurrentTime(audioCurrentTime => {
+        sound.getCurrentTime((audioCurrentTime: number) => {
           const timeDifference = Math.abs(audioCurrentTime - currentTime);
           // console.log("time diff: "+timeDifference);
           if (timeDifference > syncThreshold) {
@@ -270,7 +331,7 @@ const VideoPlayer = () => {
     }
   }, [currentTime, audioElements]);
 
-  const showFeedback = message => {
+  const showFeedback = (message: string) => {
     setFeedbackMessage(message);
     Animated.sequence([
       Animated.timing(feedbackOpacity, {
@@ -287,21 +348,21 @@ const VideoPlayer = () => {
     ]).start();
   };
 
-  const handleMute = () => {
-    setIsMuted(!isMuted);
-    showFeedback(isMuted ? 'Unmuted' : 'Muted');
-    if (isMuted) setVolume(0);
-  };
+  // const handleMute = () => {
+  //   setIsMuted(!isMuted);
+  //   showFeedback(isMuted ? 'Unmuted' : 'Muted');
+  //   if (isMuted) setVolume(0);
+  // };
 
   const handlePlayPause = () => {
     setIsPaused(!isPaused);
     showFeedback(isPaused ? 'Play' : 'Pause');
     if (audioElements.length) {
-      audioElements.forEach(({sound}) => {
+      audioElements.forEach(({ sound }: { sound: Sound }) => {
         if (isPaused) {
           sound.pause();
         } else {
-          sound.play(success => {
+          sound.play((success: boolean)  => {
             if (!success) {
               console.log('Playback failed due to audio decoding errors');
             }
@@ -311,37 +372,37 @@ const VideoPlayer = () => {
     }
   };
 
-  const handleQualityChange = quality => {
+  const handleQualityChange = (quality: string) => {
     setSelectedQuality(quality);
     showFeedback(`Quality: ${quality}`);
-    setVideoUrl(videoUrls[quality] || videoUrls['auto']);
+    setVideoUrl(videoUrls[quality] || videoUrls['auto'] || '');
   };
 
-  const handleVolumeChange = value => {
+  const handleVolumeChange = (value: number) => {
     setVolume(value);
     showFeedback(`Volume: ${Math.round(value * 100)}%`);
     // setIsMuted(value === 0);
     if (audioElements.length) {
-      audioElements.forEach(({sound}) => sound.setVolume(value));
+      audioElements.forEach(({sound}) => (sound as any).setVolume(value));
     }
   };
 
   // Playback rate change handler
-  const handlePlaybackRateChange = rate => {
+  const handlePlaybackRateChange = (rate: number) => {
     // Only change the playback rate if the video is not paused
     if (!isPaused) {
       setPlaybackRate(rate);
       showFeedback(`Speed: ${rate}x`);
 
       if (audioElements.length) {
-        audioElements.forEach(({sound}) => sound.setSpeed(rate));
+        audioElements.forEach(({sound}) => (sound as any).setSpeed(rate));
       }
     } else {
       showFeedback('Cannot change speed while paused');
     }
   };
 
-  const handleProgress = data => {
+  const handleProgress = (data: ProgressData) => {
     currentTimeRef.current = data.currentTime;
 
     setCurrentTime(data.currentTime);
@@ -364,41 +425,41 @@ const VideoPlayer = () => {
     // }
   };
 
-  const handleLoad = data => {
+  const handleLoad = (data: LoadData) => {
     setDuration(data.duration);
     setCurrentTime(data.currentTime);
   };
 
   const handleEnd = () => {
     setIsPaused(true);
-    playerRef.current.seek(0);
+    (playerRef as any).current.seek(0);
   };
 
-  const handleSeek = value => {
-    playerRef.current.seek(value);
+  const handleSeek = (value: number) => {
+    (playerRef as any).current.seek(value);
     setCurrentTime(value);
     if (audioElements.length) {
-      audioElements.forEach(({sound}) => sound.setCurrentTime(value));
+      audioElements.forEach(({sound}) => (sound as any).setCurrentTime(value));
     }
     showFeedback(`Seeked to ${formatTime(value)}`);
   };
 
   const skipForward = () => {
     const newTime = Math.min(currentTime + 10, duration);
-    playerRef.current.seek(newTime);
+    (playerRef as any).current.seek(newTime);
     setCurrentTime(newTime);
     if (audioElements.length) {
-      audioElements.forEach(({sound}) => sound.setCurrentTime(newTime));
+      audioElements.forEach(({sound}) => (sound as any).setCurrentTime(newTime));
     }
     showFeedback('>> 10 seconds');
   };
 
   const skipBackward = () => {
     const newTime = Math.max(currentTime - 10, 0);
-    playerRef.current.seek(newTime);
+    (playerRef as any).current.seek(newTime);
     setCurrentTime(newTime);
     if (audioElements.length) {
-      audioElements.forEach(({sound}) => sound.setCurrentTime(newTime));
+      audioElements.forEach(({sound}) => (sound as any).setCurrentTime(newTime));
     }
     showFeedback('<< 10 seconds');
   };
@@ -413,11 +474,17 @@ const VideoPlayer = () => {
   };
 
   //subtitle options
-  const handleSubtitleChange = async type => {
+  const handleSubtitleChange = async (type: string) => {
     setSelectedSubtitle(type);
-    showFeedback(`Subtitles: ${subtitleTracks[type].name}`);
+    const index = parseInt(type, 10);
+    if (isNaN(index) || index < 0 || index >= subtitleTracks.length) {
+      console.error('Invalid subtitle index:', type);
+      return;
+    }
 
-    const selectedTrack = subtitleTracks[type];
+    showFeedback(`Subtitles: ${(subtitleTracks[index]).name}`);
+
+    const selectedTrack = subtitleTracks[index];
 
     if (selectedTrack) {
       try {
@@ -440,7 +507,7 @@ const VideoPlayer = () => {
           const vttData = parser.parse(vttText);
 
           // Check if `cues` is an array or object and handle accordingly
-          let cuesArray = [];
+          let cuesArray: Cue[] = [];
           if (Array.isArray(vttData.cues)) {
             cuesArray = vttData.cues;
           } else if (typeof vttData.cues === 'object') {
@@ -448,7 +515,7 @@ const VideoPlayer = () => {
             cuesArray = Object.values(vttData.cues);
           }
 
-          return cuesArray.map(cue => ({
+          return cuesArray.map((cue: Cue) => ({
             startTime: cue.startTime,
             endTime: cue.endTime,
             text: cue.text,
@@ -460,7 +527,7 @@ const VideoPlayer = () => {
         setSubtitleCues(subtitleCues); // Set the subtitle cues
 
         // Convert cues to a single string if needed for another use
-        const subtitleText = subtitleCues.map(cue => cue.text).join('\n');
+        const subtitleText = subtitleCues.map((cue: Cue) => cue.text).join('\n');
         setSubtitleText(subtitleText);
       } catch (error) {
         console.error('Error fetching subtitles:', error);
@@ -468,8 +535,8 @@ const VideoPlayer = () => {
     }
   };
 
-  const extractVTTUrlsFromPlaylist = playlistText => {
-    const vttUrls = [];
+  const extractVTTUrlsFromPlaylist = (playlistText: string) => {
+    const vttUrls: string[] = [];
     const lines = playlistText.split('\n');
 
     // Regex to match URLs after #EXTINF lines
@@ -477,7 +544,7 @@ const VideoPlayer = () => {
 
     let currentLineIsVTT = false;
 
-    lines.forEach(line => {
+    lines.forEach((line: string) => {
       if (line.startsWith('#EXTINF')) {
         currentLineIsVTT = true; // Next line should contain URL
       } else if (currentLineIsVTT && vttPattern.test(line)) {
@@ -496,23 +563,23 @@ const VideoPlayer = () => {
     // Find the current subtitle based on the current time
     const currentSubtitle = subtitleCues.find(
       subtitle =>
-        currentTime >= subtitle.startTime && currentTime <= subtitle.endTime,
+        currentTime >= (subtitle as any).startTime && currentTime <= (subtitle as any).endTime,
     );
 
     // Ensure subtitle text is valid
-    if (currentSubtitle && typeof currentSubtitle.text === 'string') {
-      return <Text style={styles.subtitleText}>{currentSubtitle.text}</Text>;
+    if (currentSubtitle && typeof (currentSubtitle as any).text === 'string') {
+      return <Text style={styles.subtitleText}>{(currentSubtitle as any).text}</Text>;
     } else {
       console.log('No valid subtitle found or subtitle text is not a string');
       return null;
     }
   };
 
-  const handleTrackVolumeChange = (trackName, value) => {
+  const handleTrackVolumeChange = (trackName: string, value: number) => {
     setTrackVolumes(prevVolumes => ({...prevVolumes, [trackName]: value}));
     showFeedback(`Track ${trackName} Volume: ${Math.round(value * 100)}%`);
-    const track = audioElements.find(element => element.name === trackName);
-    if (track) track.sound.setVolume(value);
+    const track = audioElements.find(element => (element as any).name === trackName);
+    if (track) (track as any).sound.setVolume(value);
   };
 
   return (
@@ -527,16 +594,9 @@ const VideoPlayer = () => {
         paused={isPaused}
         volume={isMuted ? 0 : volume}
         rate={playbackRate}
-        onError={e => console.log(e)}
         onProgress={handleProgress}
         onLoad={handleLoad}
         onEnd={handleEnd}
-        textTracks={subtitleTracks.map(track => ({
-          title: track.name,
-          language: track.language || 'en', // Use track.language if available, fallback to 'en'
-          type: TextTrackType.VTT, // Use TextTrackType.VTT for the format
-          uri: track.uri,
-        }))}
         onError={error => {
           showFeedback('Error loading video');
           console.error(error);
