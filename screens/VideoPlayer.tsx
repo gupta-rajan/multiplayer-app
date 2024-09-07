@@ -25,6 +25,8 @@ import PlaybackControl from '../components/PlaybackControl';
 import QualityControl from '../components/QualityControl';
 import SubtitleControl from '../components/SubtitleControl';
 
+import { useRoute } from '@react-navigation/native';
+
 //types to avoid problems
 type VideoUrls = {
   [key: string]: string;
@@ -90,7 +92,12 @@ const formatTime = (time: number) => {
   }`;
 };
 
-const VideoPlayer: React.FC<VideoPlayerProps> = ({apiUrl,song_id}) => {
+const VideoPlayer: React.FC<VideoPlayerProps> = () => {
+  const route = useRoute();
+
+  const { apiUrl, song_id } = route.params;
+  // console.log("Received apiUrl:", apiUrl, "Received itemId:", song_id);
+
   const [baseUrl, setbaseUrl] = useState('');
   const playerRef = useRef(null);
   const feedbackOpacity = useRef(new Animated.Value(0)).current;
