@@ -95,7 +95,7 @@ const formatTime = (time: number) => {
 const VideoPlayer: React.FC<VideoPlayerProps> = () => {
   const route = useRoute();
 
-  const { apiUrl, song_id } = route.params;
+  const { apiUrl, song_id, type} = route.params;
   // console.log("Received apiUrl:", apiUrl, "Received itemId:", song_id);
 
   const [baseUrl, setbaseUrl] = useState('');
@@ -161,59 +161,69 @@ const VideoPlayer: React.FC<VideoPlayerProps> = () => {
         // Fetch and parse M3U8 data
         const responseM3U8 = await fetch(streamingUrl);
         const m3u8Text = await responseM3U8.text();
+        // console.log("m3u8Text: " + m3u8Text);
         const parser = new Parser();
         parser.push(m3u8Text);
         parser.end();
         const manifest = parser.manifest;
 
-        // Build quality URLs
-        const playlists = manifest.playlists;
         const baseUrl = streamingUrl.split('/').slice(0, -1).join('/');
         setbaseUrl(baseUrl);
-        const qualityUrls = {
-          '1080p': playlists.find((p: Playlist) => p.attributes.RESOLUTION.height === 1080)
-            ?.uri
-            ? `${baseUrl}/${
-                playlists.find((p: Playlist) => p.attributes.RESOLUTION.height === 1080)
-                  ?.uri
-              }`
-            : '',
-          '720p': playlists.find((p: Playlist) => p.attributes.RESOLUTION.height === 720)
-            ?.uri
-            ? `${baseUrl}/${
-                playlists.find((p: Playlist) => p.attributes.RESOLUTION.height === 720)?.uri
-              }`
-            : '',
-          '480p': playlists.find((p: Playlist) => p.attributes.RESOLUTION.height === 480)
-            ?.uri
-            ? `${baseUrl}/${
-                playlists.find((p: Playlist) => p.attributes.RESOLUTION.height === 480)?.uri
-              }`
-            : '',
-          'auto': playlists.find((p: Playlist) => p.attributes.RESOLUTION.height === 480)
-            ?.uri
-            ? `${baseUrl}/${
-                playlists.find((p: Playlist) => p.attributes.RESOLUTION.height === 480)?.uri
-              }`
-            : '',
-        };
 
-        // Set subtitle tracks
-        const subtitleTracks = manifest.mediaGroups.SUBTITLES?.subs || [];
-        const subtitleTracksArray: SubtitleTrack[] = Object.keys(subtitleTracks).map(key => ({
-          ...subtitleTracks[key],
-          name: key,
-          uri: `${baseUrl}/${subtitleTracks[key].uri}`, // Add baseUrl to each track's URI
-        }));
-        setSubtitleTracks(subtitleTracksArray);
-        console.log(subtitleTracksArray);
+        if(type=='video'){
+          // Build quality URLs
+          const playlists = manifest.playlists;
+          console.log(`Playlists: ${JSON.stringify(playlists)}`)
 
-        // Set default subtitle (for example 'notations')
-        const defaultSubtitle = subtitleTracksArray.find(
-          track => track.name === 'notations',
-        );
-        if (defaultSubtitle) {
-          handleSubtitleChange(defaultSubtitle.name);
+          const qualityUrls = {
+            '1080p': playlists.find((p: Playlist) => p.attributes.RESOLUTION.height === 1080)
+              ?.uri
+              ? `${baseUrl}/${
+                  playlists.find((p: Playlist) => p.attributes.RESOLUTION.height === 1080)
+                    ?.uri
+                }`
+              : '',
+            '720p': playlists.find((p: Playlist) => p.attributes.RESOLUTION.height === 720)
+              ?.uri
+              ? `${baseUrl}/${
+                  playlists.find((p: Playlist) => p.attributes.RESOLUTION.height === 720)?.uri
+                }`
+              : '',
+            '480p': playlists.find((p: Playlist) => p.attributes.RESOLUTION.height === 480)
+              ?.uri
+              ? `${baseUrl}/${
+                  playlists.find((p: Playlist) => p.attributes.RESOLUTION.height === 480)?.uri
+                }`
+              : '',
+            'auto': playlists.find((p: Playlist) => p.attributes.RESOLUTION.height === 480)
+              ?.uri
+              ? `${baseUrl}/${
+                  playlists.find((p: Playlist) => p.attributes.RESOLUTION.height === 480)?.uri
+                }`
+              : '',
+          };
+
+          // Set video URLs and default URL
+          setVideoUrls(qualityUrls);
+          setVideoUrl(qualityUrls['auto'] || qualityUrls['480p']);
+
+          // Set subtitle tracks
+          const subtitleTracks = manifest.mediaGroups.SUBTITLES?.subs || [];
+          const subtitleTracksArray: SubtitleTrack[] = Object.keys(subtitleTracks).map(key => ({
+            ...subtitleTracks[key],
+            name: key,
+            uri: `${baseUrl}/${subtitleTracks[key].uri}`, // Add baseUrl to each track's URI
+          }));
+          setSubtitleTracks(subtitleTracksArray);
+          // console.log(subtitleTracksArray);
+
+          // Set default subtitle (for example 'notations')
+          const defaultSubtitle = subtitleTracksArray.find(
+            track => track.name === 'notations',
+          );
+          if (defaultSubtitle) {
+            handleSubtitleChange(defaultSubtitle.name);
+          }
         }
 
         // Filter and set audio tracks
@@ -238,6 +248,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = () => {
         const initialAudioElements = filteredAudioTracks.map(track => {
           initialTrackVolumes[track.name] = 1;
           const soundUrl = track.uri ? `${baseUrl}/${track.uri}` : '';
+
           const sound = new Sound(soundUrl, undefined, error => {
             if (error) {
               console.log('Failed to load the sound', error);
@@ -253,10 +264,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = () => {
         });
         setAudioElements(initialAudioElements);
         setTrackVolumes(initialTrackVolumes);
-
-        // Set video URLs and default URL
-        setVideoUrls(qualityUrls);
-        setVideoUrl(qualityUrls['auto'] || qualityUrls['480p']);
       } catch (error) {
         console.error('Error fetching data:', error);
       }

@@ -89,12 +89,12 @@ const SongListScreen = () => {
     setFilteredSongs(sorted);
   };
 
-  const handleSongPress = (contentId: string, itemId:string, song_id: string) => {
+  const handleSongPress = (contentId: string, itemId:string, song_id: string, type: string) => {
     const apiUrl = `https://api.shaale.in/api/v1/content/${contentId}?type=song&itemId=${itemId}`;
     
     // Navigate to the VideoPlayer screen with the streamingUrl and songId
     console.log("Navigating to VideoPlayer with apiUrl:", apiUrl, "and itemId:", itemId);
-    navigation.navigate('VideoPlayer', { apiUrl, song_id });
+    navigation.navigate('VideoPlayer', { apiUrl, song_id , type});
   };
   
   const renderSongTile = ({ item }: any) => {
@@ -113,9 +113,11 @@ const SongListScreen = () => {
     const itemId = item.contents?.[0]?.id;
     const contentId = item.id;
     const song_id = item.contents?.[0]?.song_id;
+    const type = item.contents?.[0]?.type;
+    console.log("hello");
 
     return (
-      <TouchableOpacity onPress={() => handleSongPress(contentId, itemId,song_id)}>
+      <TouchableOpacity onPress={() => handleSongPress(contentId, itemId,song_id,type)}>
       <View style={styles.tileContainer}>
         {/* Thumbnail */}
         <Image source={{ uri: thumbnail }} style={styles.thumbnail} resizeMode='cover' />
