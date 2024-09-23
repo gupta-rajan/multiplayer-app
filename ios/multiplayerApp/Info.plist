@@ -48,5 +48,17 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
+	<key>NSCameraUsageDescription</key>
+	<string>We need access to the camera</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>We need access to the microphone</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>We need to save videos to your library</string>
+	<key>NSCameraUsageDescription</key>
+	<string>$(PRODUCT_NAME) needs access to your Camera.</string>
+
+	<!-- optionally, if you want to record audio: -->
+	<key>NSMicrophoneUsageDescription</key>
+	<string>$(PRODUCT_NAME) needs access to your Microphone.</string>
 </dict>
 </plist>

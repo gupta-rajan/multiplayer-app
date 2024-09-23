@@ -114,7 +114,7 @@ const SongListScreen = () => {
     const contentId = item.id;
     const song_id = item.contents?.[0]?.song_id;
     const type = item.contents?.[0]?.type;
-    console.log("hello");
+    // console.log("hello");
 
     return (
       <TouchableOpacity onPress={() => handleSongPress(contentId, itemId,song_id,type)}>

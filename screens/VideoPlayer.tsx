@@ -7,6 +7,8 @@ import {
   StyleSheet,
   Animated,
   Alert,
+  Image,
+  ActivityIndicator
 } from 'react-native';
 import Video, {TextTrackType} from 'react-native-video';
 import Slider from '@react-native-community/slider';
@@ -105,7 +107,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = () => {
   const [isMuted, setIsMuted] = useState(false);
   const [isPaused, setIsPaused] = useState(true);
   const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
+  const [isSliding, setIsSliding] = useState(false);
+  const [sliderValue, setSliderValue] = useState<number>(0);
+  const [duration, setDuration] = useState<number>(100); 
   const [isFullScreen, setIsFullScreen] = useState(false);
 
   //Volume
@@ -122,6 +126,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = () => {
   //quality changes
   const [selectedQuality, setSelectedQuality] = useState('auto');
 
+  //thumbnail
+  const [thumbnailUrl, setThumbnailUrl] = useState<string>('');
+
   const [feedbackMessage, setFeedbackMessage] = useState('');
   const [videoUrls, setVideoUrls] = useState<VideoUrls>({
     '1080p': '',
@@ -137,6 +144,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = () => {
   const [subtitleTracks, setSubtitleTracks] = useState<SubtitleTrack[]>([]);
   const [subtitleText, setSubtitleText] = useState('');
   const [subtitleCues, setSubtitleCues] = useState<Cue[]>([]); // Add this state
+
+  //VideoReady and Audio Ready
+  const [isVideoReady, setIsVideoReady] = useState(false);
+  const [isAudioReady, setIsAudioReady] = useState(false);
 
   const currentTimeRef = useRef<number>(0);
 
@@ -156,6 +167,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = () => {
         if (!songContent) {
           throw new Error('Song content not found');
         }
+
+        // Set the thumbnail URL
+        setThumbnailUrl(songContent.thumbnail); 
+
         const streamingUrl = songContent.streamingUrl;
 
         // Fetch and parse M3U8 data
@@ -173,7 +188,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = () => {
         if(type=='video'){
           // Build quality URLs
           const playlists = manifest.playlists;
-          console.log(`Playlists: ${JSON.stringify(playlists)}`)
+          // console.log(`Playlists: ${JSON.stringify(playlists)}`)
 
           const qualityUrls = {
             '1080p': playlists.find((p: Playlist) => p.attributes.RESOLUTION.height === 1080)
@@ -270,16 +285,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = () => {
     };
 
     fetchData();
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      // Cleanup audio elements
-      audioElements.forEach(({sound}) => {
-        sound.release();
-      });
-    };
-  }, [audioElements]);
+  }, [apiUrl, song_id, type]);
 
   useEffect(() => {
     const handleNetworkChange = (state: { type: string })  => {
@@ -294,7 +300,16 @@ const VideoPlayer: React.FC<VideoPlayerProps> = () => {
     return () => {
       unsubscribe();
     };
-  }, [videoUrls]);
+  }, [videoUrls]); 
+
+  useEffect(() => {
+    return () => {
+      // Cleanup audio elements
+      audioElements.forEach(({sound}) => {
+        sound.release();
+      });
+    };
+  }, [audioElements]);  
 
   useEffect(() => {
     // Handle play/pause synchronization
@@ -313,7 +328,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = () => {
         }
       });
     }
-  }, [isPaused, audioElements]);
+  }, [isPaused, audioElements]);   
 
   useEffect(() => {
     // Handle volume change synchronization
@@ -343,31 +358,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = () => {
         });
       });
     }
-  }, [currentTime, audioElements]);
-
-  const showFeedback = (message: string) => {
-    setFeedbackMessage(message);
-    Animated.sequence([
-      Animated.timing(feedbackOpacity, {
-        toValue: 1,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-      Animated.delay(800),
-      Animated.timing(feedbackOpacity, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  };
-
-  // const handleMute = () => {
-  //   setIsMuted(!isMuted);
-  //   showFeedback(isMuted ? 'Unmuted' : 'Muted');
-  //   if (isMuted) setVolume(0);
-  // };
-
+  }, [currentTime, audioElements]);  
+  
   const handlePlayPause = () => {
     setIsPaused(!isPaused);
     showFeedback(isPaused ? 'Play' : 'Pause');
@@ -385,6 +377,23 @@ const VideoPlayer: React.FC<VideoPlayerProps> = () => {
       });
     }
   };
+
+  const showFeedback = (message: string) => {
+    setFeedbackMessage(message);
+    Animated.sequence([
+      Animated.timing(feedbackOpacity, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.delay(800),
+      Animated.timing(feedbackOpacity, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };  
 
   const handleQualityChange = (quality: string) => {
     setSelectedQuality(quality);
@@ -420,6 +429,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = () => {
     currentTimeRef.current = data.currentTime;
 
     setCurrentTime(data.currentTime);
+    setSliderValue(data.currentTime);
     // setDuration(data.playableDuration);
 
     // Sync audio with video if needed
@@ -427,8 +437,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = () => {
     //   audioElements.forEach(({ sound }) => {
     //     const syncThreshold = 0.2;
     //     sound.getCurrentTime((audioCurrentTime) => {
-    //       console.log(audioCurrentTime);
-    //       console.log(data.currentTime);
+    // //       console.log(audioCurrentTime);
+    // //       console.log(data.currentTime);
     //       const timeDifference = Math.abs(audioCurrentTime - data.currentTime);
 
     //       if (timeDifference > syncThreshold) {
@@ -438,6 +448,29 @@ const VideoPlayer: React.FC<VideoPlayerProps> = () => {
     //   });
     // }
   };
+
+  const updateDuration = () => {
+    if (audioElements.length) {
+      const sound = audioElements[0].sound;
+      // Check if getDuration() is available and handle it synchronously
+      if (typeof (sound as any).getDuration === 'function') {
+        try {
+          const duration = (sound as any).getDuration();
+          setDuration(duration);
+        } catch (error) {
+          console.error("Failed to get duration:", error);
+        }
+      } else {
+        console.error("getDuration() is not a function on the sound object");
+      }
+    }
+  };
+  
+  useEffect(() => {
+    if (audioElements.length) {
+      updateDuration();
+    }
+  },[audioElements]);
 
   const handleLoad = (data: LoadData) => {
     setDuration(data.duration);
@@ -450,7 +483,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = () => {
   };
 
   const handleSeek = (value: number) => {
-    (playerRef as any).current.seek(value);
+    if(type=='video')(playerRef as any).current.seek(value);
     setCurrentTime(value);
     if (audioElements.length) {
       audioElements.forEach(({sound}) => (sound as any).setCurrentTime(value));
@@ -598,74 +631,96 @@ const VideoPlayer: React.FC<VideoPlayerProps> = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Video
-        ref={playerRef}
-        source={{uri: videoUrl}}
-        style={styles.video}
-        controls={false}
-        resizeMode="contain"
-        muted={isMuted}
-        paused={isPaused}
-        volume={isMuted ? 0 : volume}
-        rate={playbackRate}
-        onProgress={handleProgress}
-        onLoad={handleLoad}
-        onEnd={handleEnd}
-        onError={error => {
-          showFeedback('Error loading video');
-          console.error(error);
-        }}
-      />
-      {renderSubtitles()}
-      <Slider
-        style={styles.slider}
-        value={currentTime}
-        minimumValue={0}
-        maximumValue={duration}
-        minimumTrackTintColor="#1EB1FC"
-        maximumTrackTintColor="#1EB1FC"
-        thumbTintColor="#1EB1FC"
-        onValueChange={handleSeek}
-      />
-      <View style={styles.controls}>
-        <TouchableOpacity onPress={skipBackward}>
-          <Ionicons name="play-back" size={24} color="#FFF" />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={handlePlayPause}>
-          <Ionicons name={isPaused ? 'play' : 'pause'} size={24} color="#FFF" />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={skipForward}>
-          <Ionicons name="play-forward" size={24} color="#FFF" />
-        </TouchableOpacity>
-
-        <VolumeControl volume={volume} onVolumeChange={handleVolumeChange} />
-        <MusicControl
-          audioTracks={audioTracks}
-          trackVolumes={trackVolumes}
-          onTrackVolumeChange={handleTrackVolumeChange}
+      <View style={styles.videoContainer}>
+      {videoUrl ? (
+        <Video
+          ref={playerRef}
+          source={{ uri: videoUrl }}
+          style={styles.video}
+          controls={false}
+          resizeMode="contain"
+          muted={isMuted}
+          paused={isPaused}
+          volume={isMuted ? 0 : volume}
+          rate={playbackRate}
+          onProgress={handleProgress}
+          onLoad={handleLoad}
+          onEnd={handleEnd}
+          onError={error => {
+            showFeedback('Error loading video');
+            console.error(error);
+          }}
         />
-
-        <PlaybackControl
-          isPaused={isPaused}
-          onPlaybackRateChange={handlePlaybackRateChange}
-        />
-        <QualityControl onQualityChange={handleQualityChange} />
-        <TouchableOpacity onPress={toggleFullScreen}>
-          <Ionicons
-            name={isFullScreen ? 'contract' : 'expand'}
-            size={24}
-            color="#FFF"
-          />
-        </TouchableOpacity>
-        <SubtitleControl
-          onSubtitleChange={handleSubtitleChange}
-          subtitleTracks={subtitleTracks}
-        />
+      ) : (
+        thumbnailUrl && (
+          <View style={styles.thumbnailContainer}>
+            <Image
+              source={{ uri: thumbnailUrl }}
+              style={styles.thumbnail}
+              resizeMode="contain" // Adjust this to 'contain' to fit the image within the container without cropping
+            />
+          </View>
+        )
+      )}
       </View>
-      <Text style={styles.subtitleText}>{subtitles}</Text>
-      <Animated.View style={{opacity: feedbackOpacity}}>
-        <Text style={styles.feedbackText}>{feedbackMessage}</Text>
-      </Animated.View>
+      
+      {renderSubtitles()}
+      <View style={styles.sliderContainer}>
+        <Slider
+          style={styles.slider}
+          value={currentTime}
+          minimumValue={0}
+          maximumValue={duration}
+          minimumTrackTintColor="#1EB1FC"
+          maximumTrackTintColor="#1EB1FC"
+          thumbTintColor="#1EB1FC"
+          onValueChange={handleSeek}
+        />
+        <View style={styles.controls}>
+          <TouchableOpacity onPress={skipBackward}>
+            <Ionicons name="play-back" size={24} color="#FFF" />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={handlePlayPause}>
+            <Ionicons name={isPaused ? 'play' : 'pause'} size={24} color="#FFF" />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={skipForward}>
+            <Ionicons name="play-forward" size={24} color="#FFF" />
+          </TouchableOpacity>
+
+          <VolumeControl volume={volume} onVolumeChange={handleVolumeChange} />
+          <MusicControl
+            audioTracks={audioTracks}
+            trackVolumes={trackVolumes}
+            onTrackVolumeChange={handleTrackVolumeChange}
+          />
+
+          <PlaybackControl
+            isPaused={isPaused}
+            onPlaybackRateChange={handlePlaybackRateChange}
+          />
+          {Object.values(videoUrls).some(url => url) && (
+            <QualityControl onQualityChange={handleQualityChange} />
+          )}
+          <TouchableOpacity onPress={toggleFullScreen}>
+            <Ionicons
+              name={isFullScreen ? 'contract' : 'expand'}
+              size={24}
+              color="#FFF"
+            />
+          </TouchableOpacity>
+          {subtitleTracks.length > 0 && (
+            <SubtitleControl
+              onSubtitleChange={handleSubtitleChange}
+              subtitleTracks={subtitleTracks}
+            />
+          )}
+        </View>
+        <Text style={styles.subtitleText}>{subtitles}</Text>
+        <Animated.View style={{opacity: feedbackOpacity}}>
+          <Text style={styles.feedbackText}>{feedbackMessage}</Text>
+        </Animated.View>
+      </View>
+      
     </SafeAreaView>
   );
 };

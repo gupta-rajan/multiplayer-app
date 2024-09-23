@@ -1,9 +1,11 @@
-import { StyleSheet } from 'react-native';
+import {StyleSheet} from 'react-native';
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'black',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   video: {
     flex: 1,
@@ -20,6 +22,31 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     marginHorizontal: 5,
   },
+  videoContainer: {
+    width: '100%',
+    height: 300, // Adjust based on your requirements
+    alignSelf: 'center',
+  },
+  sliderContainer: {
+    paddingHorizontal: 2,
+    paddingVertical: 1,
+    position: 'absolute',
+    bottom: 0, // Pin to the bottom of the screen
+    width: '100%', // Ensure it takes full width
+  },
+  
+  //Thumbnails ----------------------------------------------------------------
+  thumbnailContainer: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden', // Hide overflow to prevent the image from being cut off
+  },
+  thumbnail: {
+    width: '100%',
+    height: '100%',
+  },
 
   //Volume controls ---------------------------------------------------------------
   volumeControlContainer: {
@@ -29,7 +56,7 @@ const styles = StyleSheet.create({
     position: 'relative', // Ensure positioning context for children
   },
   volumeSlider: {
-    transform: [{ rotate: '-90deg' }], // Rotate the slider to make it vertical
+    transform: [{rotate: '-90deg'}], // Rotate the slider to make it vertical
     width: 100, // Adjust width as needed
     height: 100, // Adjust height as needed
   },
@@ -54,6 +81,7 @@ const styles = StyleSheet.create({
 
   //music track controls----------------------------------------------------------------
   musicControlContainer: {
+    flexDirection: 'row', 
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 10,
@@ -64,7 +92,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  
+
   trackContainer: {
     position: 'absolute',
     bottom: 40,
@@ -80,7 +108,7 @@ const styles = StyleSheet.create({
   trackRow: {
     flexDirection: 'row',
     justifyContent: 'center', // Distribute columns evenly
-    backgroundColor: '#1A2130', 
+    backgroundColor: '#1A2130',
     // backgroundColor: 'white',
     width: 800,
   },
@@ -103,7 +131,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   trackSlider: {
-    transform: [{ rotate: '-90deg' }], // Rotate the slider to make it vertical
+    transform: [{rotate: '-90deg'}], // Rotate the slider to make it vertical
     width: 100, // Adjust width as needed
     height: 100, // Adjust height as needed
   },
@@ -144,7 +172,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginHorizontal: 10,
   },
-  
+
   qualityOptionsContainer: {
     // Style for the animated container of quality options
     position: 'absolute',
@@ -156,14 +184,14 @@ const styles = StyleSheet.create({
     zIndex: 1, // Ensure it's below the playback icon
     width: 55,
   },
-  
+
   qualityOption: {
     // Style for each quality option
     color: '#FFF',
     fontSize: 12,
     paddingVertical: 5,
   },
-  
+
   settingsIconContainer: {
     position: 'relative',
   },
@@ -171,57 +199,57 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: '100%', // Position above the settings icon
     left: '50%',
-    transform: [{ translateX: -60 }], // Center horizontally with respect to the settings icon
+    transform: [{translateX: -60}], // Center horizontally with respect to the settings icon
     backgroundColor: '#1E1E1E', // Background color around the options
     borderRadius: 10,
     padding: 10,
     width: 120, // Adjust width as needed
     zIndex: 50, // Ensure it appears above other elements
   },
-    // Subtitle options ----------------------------------------------------------------
-    subtitleControlContainer: {
-      justifyContent: 'center',
-      alignItems: 'center',
-      paddingHorizontal: 10,
-      position: 'relative', // Ensure positioning context for children
-    },
-    subtitleIconContainer: {
-      zIndex: 2, // Ensure the subtitle icon is above the subtitle options
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    subtitleOptionsContainer: {
-      position: 'absolute',
-      bottom: 40, // Adjust this to position the options container above the subtitle icon
-      right: 0, // Align the options with the center of the subtitle icon
-      backgroundColor: '#1A2130', // Background color around the options
-      borderRadius: 10, // Optional: rounded corners
-      padding: 10, // Optional: padding around the options
-      zIndex: 1, // Ensure it's below the subtitle icon
-      width: 100, // Adjust width as needed
-    },
-    subtitleOption: {
-      paddingVertical: 10, // Vertical padding for each option
-      color: '#FFF', // Text color for the options
-      fontSize: 12, // Font size for the options
-      textAlign: 'center', // Center text within each option
-    },
-    subtitleTextContainer: {
-      position: 'absolute',
-      bottom: 80, // Position the subtitle text above other elements
-      left: '50%',
-      transform: [{ translateX: -150 }], // Center horizontally
-      backgroundColor: '#1E1E1E', // Background color for better visibility
-      borderRadius: 10,
-      padding: 10,
-      width: 300, // Adjust width as needed
-      zIndex: 50, // Ensure it appears above other elements
-    },
-    subtitleText: {
-      color: 'white',
-      fontSize: 16,
-      textAlign: 'center',
-    },  
+  // Subtitle options ----------------------------------------------------------------
+  subtitleControlContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    position: 'relative', // Ensure positioning context for children
+  },
+  subtitleIconContainer: {
+    zIndex: 2, // Ensure the subtitle icon is above the subtitle options
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  subtitleOptionsContainer: {
+    position: 'absolute',
+    bottom: 40, // Adjust this to position the options container above the subtitle icon
+    right: 0, // Align the options with the center of the subtitle icon
+    backgroundColor: '#1A2130', // Background color around the options
+    borderRadius: 10, // Optional: rounded corners
+    padding: 10, // Optional: padding around the options
+    zIndex: 1, // Ensure it's below the subtitle icon
+    width: 100, // Adjust width as needed
+  },
+  subtitleOption: {
+    paddingVertical: 10, // Vertical padding for each option
+    color: '#FFF', // Text color for the options
+    fontSize: 12, // Font size for the options
+    textAlign: 'center', // Center text within each option
+  },
+  subtitleTextContainer: {
+    position: 'absolute',
+    bottom: 80, // Position the subtitle text above other elements
+    left: '50%',
+    transform: [{translateX: -150}], // Center horizontally
+    backgroundColor: '#1E1E1E', // Background color for better visibility
+    borderRadius: 10,
+    padding: 10,
+    width: 300, // Adjust width as needed
+    zIndex: 50, // Ensure it appears above other elements
+  },
+  subtitleText: {
+    color: 'white',
+    fontSize: 16,
+    textAlign: 'center',
+  },
 
   option: {
     paddingVertical: 10,
@@ -276,7 +304,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: '50%',
     left: '50%',
-    transform: [{ translateX: -75 }, { translateY: -25 }],
+    transform: [{translateX: -75}, {translateY: -25}],
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
     borderRadius: 10,
     padding: 10,
