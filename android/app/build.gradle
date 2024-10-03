@@ -125,7 +125,14 @@ dependencies {
         implementation jscFlavor
     }
     implementation project(':react-native-vector-icons')
+<<<<<<< HEAD
     implementation project(':react-native-fs')
+=======
+<<<<<<< HEAD
+    implementation project(':react-native-fs')
+=======
+>>>>>>> c9038c3 (update video recorder and player)
+>>>>>>> 753c1f7 (update video player and recorder)
 }
 
 apply from: file("../../node_modules/@react-native-community/cli-platform-android/native_modules.gradle"); applyNativeModulesAppBuildGradle(project)

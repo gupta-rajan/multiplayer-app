@@ -1,6 +1,13 @@
 buildscript {
     ext {
         buildToolsVersion = "34.0.0"
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+=======
+        kotlinVersion = "1.7.0"
+>>>>>>> c9038c3 (update video recorder and player)
+>>>>>>> 753c1f7 (update video player and recorder)
         minSdkVersion = 23
         compileSdkVersion = 34
         targetSdkVersion = 34

@@ -10,7 +10,14 @@
     "test": "jest"
   },
   "dependencies": {
+<<<<<<< HEAD
     "@react-native-async-storage/async-storage": "^2.0.0",
+=======
+<<<<<<< HEAD
+    "@react-native-async-storage/async-storage": "^2.0.0",
+=======
+>>>>>>> c9038c3 (update video recorder and player)
+>>>>>>> 753c1f7 (update video player and recorder)
     "@react-native-camera-roll/camera-roll": "^7.8.3",
     "@react-native-community/netinfo": "^11.3.2",
     "@react-native-community/slider": "^4.5.2",
@@ -27,8 +34,16 @@
     "m3u8-parser": "^7.1.0",
     "react": "18.2.0",
     "react-native": "0.74.3",
+<<<<<<< HEAD
     "react-native-audio-recorder": "^0.0.8",
     "react-native-fs": "^2.20.0",
+=======
+<<<<<<< HEAD
+    "react-native-audio-recorder": "^0.0.8",
+    "react-native-fs": "^2.20.0",
+=======
+>>>>>>> c9038c3 (update video recorder and player)
+>>>>>>> 753c1f7 (update video player and recorder)
     "react-native-gesture-handler": "^2.19.0",
     "react-native-modal": "^13.0.1",
     "react-native-orientation-locker": "^1.7.0",
@@ -36,7 +51,15 @@
     "react-native-screens": "^3.34.0",
     "react-native-share": "^11.0.3",
     "react-native-sound": "^0.11.2",
+<<<<<<< HEAD
     "react-native-vector-icons": "^10.2.0",
+=======
+<<<<<<< HEAD
+    "react-native-vector-icons": "^10.2.0",
+=======
+    "react-native-vector-icons": "^10.1.0",
+>>>>>>> c9038c3 (update video recorder and player)
+>>>>>>> 753c1f7 (update video player and recorder)
     "react-native-video": "^6.4.2",
     "react-native-vision-camera": "^4.5.3",
     "video.js": "^8.16.1",

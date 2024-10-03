@@ -2,9 +2,19 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.CAMERA" />
+<<<<<<< HEAD
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 
+=======
+<<<<<<< HEAD
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+
+=======
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+>>>>>>> c9038c3 (update video recorder and player)
+>>>>>>> 753c1f7 (update video player and recorder)
 
     <application
       android:name=".MainApplication"

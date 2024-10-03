@@ -27,13 +27,37 @@ import PlaybackControl from '../components/PlaybackControl';
 import QualityControl from '../components/QualityControl';
 import SubtitleControl from '../components/SubtitleControl';
 
+<<<<<<< HEAD
 import { useRoute } from '@react-navigation/native';
+=======
+<<<<<<< HEAD
+import { useRoute } from '@react-navigation/native';
+=======
+import Recorder from './Recorder';
+
+import { RouteProp, useRoute } from '@react-navigation/native';
+>>>>>>> c9038c3 (update video recorder and player)
+>>>>>>> 753c1f7 (update video player and recorder)
 
 //types to avoid problems
 type VideoUrls = {
   [key: string]: string;
 };
 
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+=======
+type VideoPlayerParams = {
+  apiUrl: string;
+  song_id: string;
+  type: string;
+};
+
+type RouteParams = RouteProp<{ params: VideoPlayerParams }, 'params'>;
+
+>>>>>>> c9038c3 (update video recorder and player)
+>>>>>>> 753c1f7 (update video player and recorder)
 type Cue = {
   startTime: number;
   endTime: number;
@@ -85,7 +109,14 @@ interface VideoPlayerProps {
   song_id: string;
 }
 
+<<<<<<< HEAD
 
+=======
+<<<<<<< HEAD
+
+=======
+>>>>>>> c9038c3 (update video recorder and player)
+>>>>>>> 753c1f7 (update video player and recorder)
 const formatTime = (time: number) => {
   const minutes = Math.floor(time / 60);
   const seconds = Math.floor(time % 60);
@@ -95,7 +126,15 @@ const formatTime = (time: number) => {
 };
 
 const VideoPlayer: React.FC<VideoPlayerProps> = () => {
+<<<<<<< HEAD
   const route = useRoute();
+=======
+<<<<<<< HEAD
+  const route = useRoute();
+=======
+  const route = useRoute<RouteParams>();
+>>>>>>> c9038c3 (update video recorder and player)
+>>>>>>> 753c1f7 (update video player and recorder)
 
   const { apiUrl, song_id, type} = route.params;
   // console.log("Received apiUrl:", apiUrl, "Received itemId:", song_id);
@@ -149,6 +188,15 @@ const VideoPlayer: React.FC<VideoPlayerProps> = () => {
   const [isVideoReady, setIsVideoReady] = useState(false);
   const [isAudioReady, setIsAudioReady] = useState(false);
 
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+=======
+  //Recorder
+  const [showRecorder, setShowRecorder] = useState(false);
+
+>>>>>>> c9038c3 (update video recorder and player)
+>>>>>>> 753c1f7 (update video player and recorder)
   const currentTimeRef = useRef<number>(0);
 
   useEffect(() => {
@@ -174,6 +222,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = () => {
         const streamingUrl = songContent.streamingUrl;
 
         // Fetch and parse M3U8 data
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> 753c1f7 (update video player and recorder)
         const responseM3U8 = await fetch(streamingUrl);
         const m3u8Text = await responseM3U8.text();
         // console.log("m3u8Text: " + m3u8Text);
@@ -184,11 +236,65 @@ const VideoPlayer: React.FC<VideoPlayerProps> = () => {
 
         const baseUrl = streamingUrl.split('/').slice(0, -1).join('/');
         setbaseUrl(baseUrl);
+<<<<<<< HEAD
+=======
+=======
+        const parseM3U8 = async (streamingUrl) => {
+          try {
+            // Fetch the M3U8 file
+            const responseM3U8 = await fetch(streamingUrl);
+
+            if (!responseM3U8.ok) {
+              throw new Error(`Failed to fetch M3U8: ${responseM3U8.statusText}`);
+            }
+
+            const m3u8Text = await responseM3U8.text();
+
+            // Initialize the parser
+            const parser = new Parser();
+            // console.log(m3u8Text);  
+            
+            // Push the fetched M3U8 content to the parser
+            parser.push(m3u8Text);
+            parser.end(); 
+            // console.log("hello");
+            // Extract the manifest object
+            const manifest = parser.manifest;
+
+            // console.log(manifest);
+
+            // Derive the base URL from the streaming URL
+            const baseUrl = streamingUrl.split('/').slice(0, -1).join('/');
+
+            // console.log("Base URL:", baseUrl);
+            // console.log("Parsed manifest:", manifest);
+
+            // Set the base URL state (if using React)
+            setbaseUrl(baseUrl);
+
+            return { baseUrl, manifest };
+          } catch (error) {
+            console.error("Error parsing M3U8:", error);
+          }
+        };
+
+        const { baseUrl, manifest } = await parseM3U8(streamingUrl);
+>>>>>>> c9038c3 (update video recorder and player)
+>>>>>>> 753c1f7 (update video player and recorder)
 
         if(type=='video'){
           // Build quality URLs
           const playlists = manifest.playlists;
+<<<<<<< HEAD
           // console.log(`Playlists: ${JSON.stringify(playlists)}`)
+=======
+<<<<<<< HEAD
+          // console.log(`Playlists: ${JSON.stringify(playlists)}`)
+=======
+
+          // console.log(playlists);
+>>>>>>> c9038c3 (update video recorder and player)
+>>>>>>> 753c1f7 (update video player and recorder)
 
           const qualityUrls = {
             '1080p': playlists.find((p: Playlist) => p.attributes.RESOLUTION.height === 1080)
@@ -584,6 +690,13 @@ const VideoPlayer: React.FC<VideoPlayerProps> = () => {
 
   const extractVTTUrlsFromPlaylist = (playlistText: string) => {
     const vttUrls: string[] = [];
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+=======
+    // console.log(playlistText);
+>>>>>>> c9038c3 (update video recorder and player)
+>>>>>>> 753c1f7 (update video player and recorder)
     const lines = playlistText.split('\n');
 
     // Regex to match URLs after #EXTINF lines
@@ -629,6 +742,18 @@ const VideoPlayer: React.FC<VideoPlayerProps> = () => {
     if (track) (track as any).sound.setVolume(value);
   };
 
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+=======
+  //Recorder
+  const handleRecord = () => {
+    setShowRecorder(true);
+    // You can add more logic to start recording when this is triggered
+  };
+
+>>>>>>> c9038c3 (update video recorder and player)
+>>>>>>> 753c1f7 (update video player and recorder)
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.videoContainer}>
@@ -665,6 +790,13 @@ const VideoPlayer: React.FC<VideoPlayerProps> = () => {
       </View>
       
       {renderSubtitles()}
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+=======
+      {showRecorder && <Recorder />}
+>>>>>>> c9038c3 (update video recorder and player)
+>>>>>>> 753c1f7 (update video player and recorder)
       <View style={styles.sliderContainer}>
         <Slider
           style={styles.slider}
@@ -714,6 +846,15 @@ const VideoPlayer: React.FC<VideoPlayerProps> = () => {
               subtitleTracks={subtitleTracks}
             />
           )}
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+=======
+          <TouchableOpacity onPress={handleRecord}>
+            <Ionicons name="radio-button-on" size={24} color="red" />
+          </TouchableOpacity>
+>>>>>>> c9038c3 (update video recorder and player)
+>>>>>>> 753c1f7 (update video player and recorder)
         </View>
         <Text style={styles.subtitleText}>{subtitles}</Text>
         <Animated.View style={{opacity: feedbackOpacity}}>

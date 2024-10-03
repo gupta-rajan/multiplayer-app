@@ -49,6 +49,10 @@
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
 	<key>NSCameraUsageDescription</key>
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> 753c1f7 (update video player and recorder)
 	<string>We need access to the camera</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>We need access to the microphone</string>
@@ -58,6 +62,12 @@
 	<string>$(PRODUCT_NAME) needs access to your Camera.</string>
 
 	<!-- optionally, if you want to record audio: -->
+<<<<<<< HEAD
+=======
+=======
+	<string>$(PRODUCT_NAME) needs access to your Camera.</string>
+>>>>>>> c9038c3 (update video recorder and player)
+>>>>>>> 753c1f7 (update video player and recorder)
 	<key>NSMicrophoneUsageDescription</key>
 	<string>$(PRODUCT_NAME) needs access to your Microphone.</string>
 </dict>

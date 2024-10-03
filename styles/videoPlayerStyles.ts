@@ -343,4 +343,12 @@ const styles = StyleSheet.create({
   },
 });
 
+<<<<<<< HEAD
 export default styles;
+=======
+<<<<<<< HEAD
+export default styles;
+=======
+export default styles;
+>>>>>>> c9038c3 (update video recorder and player)
+>>>>>>> 753c1f7 (update video player and recorder)
